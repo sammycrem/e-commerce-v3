@@ -1,0 +1,32 @@
+{% extends "account/base.html" %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block account_content %}
+<h2 class="mb-4">Profile</h2>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <form method="POST">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" value="{{ current_user.username }}" disabled>
+                <div class="form-text">Username cannot be changed.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" id="phone" name="phone" value="{{ current_user.phone or '' }}">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

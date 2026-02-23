@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+
+{% block title %}Shop - Our Products{% endblock %}
+
+{% block content %}
+<div class="bg-light py-5 mb-5 border-bottom">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold">Shop</h1>
+        <p class="lead text-muted">Explore our exclusive collection of high-quality products.</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row g-4">
+        {% for product in products %}
+        <div class="col-sm-6 col-md-4 col-lg-3 wide-20">
+            <div class="card h-100 shadow-sm border-0 product-card overflow-hidden" style="border-radius: 0;">
+                <a href="{{ url_for('main.product_page', sku=product.product_sku) }}" class="product-image-container d-block position-relative">
+                    {% if product.images %}
+                        <img src="{{ product.images[0].url | big_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                    {% else %}
+                        <img src="{{ url_for('static', filename='img/placeholder.webp') }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                    {% endif %}
+                    <div class="product-overlay d-flex align-items-center justify-content-center opacity-0 transition">
+                        <span class="btn btn-primary shadow">View Details</span>
+                    </div>
+                    <div class="position-absolute top-0 start-0 m-3 d-flex flex-column gap-2 wide-auto">
+                        {% if product.message %}
+                            <span class="badge bg-info text-dark rounded-pill shadow-sm">{{ product.message }}</span>
+                        {% endif %}
+                    </div>
+                </a>
+                <div class="card-body">
+                    <h5 class="card-title fw-bold mb-2" style="font-size: medium !important;">
+                        <a href="{{ url_for('main.product_page', sku=product.product_sku) }}" class="text-decoration-none text-dark">{{ product.name }}</a>
+                    </h5>
+                    <p class="card-text text-muted small mb-3 text-truncate-2">{{ product.short_description }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="h5 fw-bold text-primary mb-0 product-price" data-base-price-cents="{{ product.base_price_cents }}">{{ currency_symbol }}{{ "%.2f"|format(product.base_price_cents / 100) }}</span>
+                        <div class="text-warning">
+                            {% set rating = product.average_rating %}
+                            {% for i in range(1, 6) %}
+                                {% if rating >= i %}
+                                    <i class="bi bi-star-fill small"></i>
+                                {% elif rating >= i - 0.5 %}
+                                    <i class="bi bi-star-half small"></i>
+                                {% else %}
+                                    <i class="bi bi-star small"></i>
+                                {% endif %}
+                            {% endfor %}
+                            <span class="text-muted small ms-1" style="font-size: 0.8rem;">({{ product.review_count }})</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center py-5">
+            <i class="bi bi-search fs-1 text-muted mb-3"></i>
+            <h3>No products found</h3>
+            <p class="text-muted">Stay tuned! We're adding new products every day.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

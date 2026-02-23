@@ -1,0 +1,440 @@
+{% extends "layout.html" %}
+{% block title %}{{ sku }} - {{ product.name if product else 'Product' }} | E-Commerce Pro{% endblock %}
+
+{% block meta_tags %}
+<meta name="description" content="{{ product.short_description if product and product.short_description else 'Product details' }}">
+<meta name="keywords" content="{{ product.tag1 }}, {{ product.tag2 }}, {{ product.tag3 }}, {{ product.category }}">
+{% endblock %}
+
+{% block og_tags %}
+{% if product %}
+<meta property="og:title" content="{{ product.name }} | E-Commerce Pro">
+<meta property="og:description" content="{{ product.short_description }}">
+<meta property="og:type" content="product">
+<meta property="og:url" content="{{ request.url }}">
+{% if product.images %}
+<meta property="og:image" content="{{ url_for('static', filename=product.images[0].url.split('/static/')[-1], _external=True) }}">
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block head %}
+<style>
+    .product-card-sm {
+        transition: transform 0.2s;
+        border: none;
+        background: none;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    .product-card-sm:hover {
+        color: inherit;
+    }
+    .product-card-sm .img-wrap {
+        aspect-ratio: 1/1;
+        overflow: hidden;
+        border-radius: 12px;
+        background-color: #f8f9fa;
+        margin-bottom: 0.75rem;
+        border: 1px solid #eee;
+    }
+    .product-card-sm img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+    .product-card-sm:hover img {
+        transform: scale(1.05);
+    }
+    .product-card-sm .card-title {
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-weight: 600;
+    }
+    .product-card-sm .card-price {
+        font-weight: 700;
+        color: var(--bs-primary);
+        font-size: 1rem;
+    }
+    .tag-badge {
+        font-size: 0.7rem;
+        padding: 0.25em 0.6em;
+        margin-right: 0.3em;
+        border-radius: 4px;
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    .selected-outline {
+        outline: rgb(17, 24, 39) solid 3px !important;
+        outline-offset: 2px;
+    }
+    .swatch.selected-outline {
+        border-color: rgb(17, 24, 39);
+    }
+    .nav-arrow {
+        background: rgba(255, 255, 255, 0.8);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        z-index: 10;
+        color: #333;
+    }
+    .nav-arrow:hover {
+        background: #fff;
+        transform: translateY(-50%) scale(1.1);
+    }
+    .nav-arrow i {
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+    .main-image-wrap {
+        overflow: hidden;
+        cursor: zoom-in;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    #main-image {
+        transition: transform 0.2s ease-out;
+        transform-origin: center center;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .main-image-wrap.zoomed #main-image {
+        cursor: zoom-out;
+        transition: transform 0.05s linear; /* faster response while moving */
+    }
+    .qty-box {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #fff;
+    }
+    .qty-box button {
+        border: none;
+        background: none;
+        padding: 4px 10px;
+        font-weight: bold;
+        color: #6c757d;
+        transition: background 0.2s;
+    }
+    .qty-box button:hover {
+        background: #f8f9fa;
+    }
+    .qty-box .qty-val {
+        padding: 0 8px;
+        min-width: 30px;
+        text-align: center;
+        border-left: 1px solid #dee2e6;
+        border-right: 1px solid #dee2e6;
+    }
+    .sidebar-item {
+        border: 1px solid #eee !important;
+        border-radius: 8px !important;
+        padding: 0.75rem !important;
+        background: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    #sidebar-cart-list .sidebar-price {
+        color: #0d6efd !important;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    .qty-box .qty-val {
+        padding: 0 12px;
+        min-width: 35px;
+        font-size: 1.1rem;
+        text-align: center;
+        border-left: 1px solid #dee2e6;
+        border-right: 1px solid #dee2e6;
+    }
+    /* Reviews Styles */
+    .star-rating {
+        color: #ffc107;
+        font-size: 1.1rem;
+    }
+    .star-rating.interactive i {
+        cursor: pointer;
+    }
+    .review-card {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+    }
+    .review-card:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="row g-0">
+        <!-- Gallery Column (50%) -->
+        <div class="col-lg-6 bg-light">
+            <div class="d-flex h-100">
+                <!-- Vertical Thumbnails -->
+                <div id="thumb-rail" class="thumb-rail d-flex flex-column p-3" style="width: 100px; gap: 10px;">
+                    <!-- Thumbs injected by product.js -->
+                </div>
+
+                <!-- Main Image -->
+                <div class="main-image-wrap flex-grow-1 position-relative overflow-hidden">
+                    <img id="main-image" src="{{ url_for('static', filename='img/placeholder.webp') }}" alt="Product image" class="img-fluid w-100 h-100 object-fit-cover" />
+
+                    <!-- Navigation Arrows -->
+                    <button id="prev-image" class="nav-arrow prev position-absolute top-50 start-0 translate-middle-y ms-2 shadow-sm" aria-label="Previous image">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button id="next-image" class="nav-arrow next position-absolute top-50 end-0 translate-middle-y me-2 shadow-sm" aria-label="Next image">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Column (33.3%) -->
+        <div class="col-lg-4 p-4 p-xl-5 bg-white">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.shop_page') }}" class="text-decoration-none">Shop</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Product</li>
+                </ol>
+            </nav>
+
+            <div id="product-tags" class="mb-2">
+                <!-- Tags will be injected here -->
+            </div>
+            <div class="d-flex align-items-center flex-wrap mb-2">
+                <h3 id="product-name" class="fw-bold mb-0 me-2">Loading...</h3>
+                {% if global_promo_enabled and global_promo_message %}
+                <span class="badge bg-danger text-wrap text-start mt-1 mt-md-0" style="font-size: 0.8rem; line-height: 1.2;">{{ global_promo_message }}</span>
+                {% endif %}
+            </div>
+            <p id="product-price" class="h4 text-primary fw-bold mb-4 product-price" data-base-price-cents="0">{{ currency_symbol }}0.00</p>
+
+            <div id="product-description" class="text-muted mb-4 small"></div>
+
+            <div class="selectors">
+                <!-- Color Swatches -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-uppercase text-muted mb-2">Color</label>
+                    <div id="swatch-grid" class="d-flex flex-wrap gap-2" role="list">
+                        <!-- Swatches injected by product.js -->
+                    </div>
+                </div>
+
+                <!-- Size Buttons -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-uppercase text-muted mb-2">Size</label>
+                    <div id="size-buttons" class="d-flex flex-wrap gap-2" role="radiogroup">
+                        <!-- Size buttons injected by product.js -->
+                    </div>
+                </div>
+
+                <!-- Quantity -->
+                <div class="mb-4">
+                    <label for="qty-input" class="form-label fw-bold small text-uppercase text-muted mb-2">Quantity</label>
+                    <div class="input-group" style="width: 150px;">
+                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepDown()">-</button>
+                        <input id="qty-input" type="number" min="1" value="1" class="form-control text-center">
+                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepUp()">+</button>
+                    </div>
+                </div>
+
+                <button id="add-to-cart" class="btn btn-primary btn-lg w-100 fw-bold py-3 shadow mb-3">
+                    <i class="bi bi-cart-plus me-2"></i>ADD TO CART
+                </button>
+            </div>
+
+            <div id="variant-message" class="mt-2 small fw-bold text-danger"></div>
+
+            <div class="mt-4 border-top pt-3">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-truck fs-5 me-2 text-muted"></i>
+                    <span class="small">Free Shipping on orders over {{ currency_symbol }}150</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Column (16.6%) -->
+        <div class="col-lg-2 d-none d-lg-block border-start p-3 bg-white sticky-top" style="height: 100vh; overflow-y: auto;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold mb-0">Your Cart</h5>
+                <h5 id="sidebar-total" class="fw-bold mb-0 text-primary">{{ currency_symbol }}0.00</h5>
+            </div>
+
+            <div id="sidebar-cart-list" class="d-flex flex-column gap-3 mb-4">
+                <!-- Cart items injected by product.js -->
+            </div>
+
+            <button id="go-to-cart" class="btn btn-primary w-100 fw-bold py-3 mb-4">
+                GO TO CART
+            </button>
+        </div>
+    </div>
+
+    <!-- Product Details Section -->
+    <div class="container py-5">
+        <div id="product-details-section" class="row mt-5 pt-4 d-none border-top">
+            <div class="col-12">
+                <h4 class="fw-bold mb-4">Product Details</h4>
+                <div id="product-details-container" class="text-muted mb-5" style="white-space: pre-line; line-height: 1.6;">
+                    <!-- Product details injected here -->
+                </div>
+
+                <h4 class="fw-bold mb-4">Product Description</h4>
+                <div id="full-description-container" class="text-muted" style="white-space: pre-line; line-height: 1.6;">
+                    <!-- Full description injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews Section -->
+        <div id="reviews-section" class="row mt-5 pt-4 border-top">
+            <div class="col-lg-8">
+                <h4 class="fw-bold mb-4">Customer Reviews</h4>
+
+                <!-- Review Form -->
+                {% if current_user.is_authenticated %}
+                    {% if user_review %}
+                        <div class="alert alert-success mb-4 d-flex justify-content-between align-items-center">
+                            <span>You have already reviewed this product.</span>
+                            <button id="edit-review-btn" class="btn btn-sm btn-outline-success">Edit Review</button>
+                        </div>
+                        <div class="card mb-4 shadow-sm d-none" id="review-form-container">
+                            <div class="card-body">
+                                <h5 class="card-title">Update Your Review</h5>
+                                <form id="review-form" data-method="PUT" data-initial-rating="{{ user_review.rating }}" data-initial-comment="{{ user_review.comment }}">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Rating</label>
+                                        <div class="star-rating interactive" id="rating-input">
+                                            <i class="bi bi-star" data-value="1"></i>
+                                            <i class="bi bi-star" data-value="2"></i>
+                                            <i class="bi bi-star" data-value="3"></i>
+                                            <i class="bi bi-star" data-value="4"></i>
+                                            <i class="bi bi-star" data-value="5"></i>
+                                            <input type="hidden" name="rating" id="rating-value" value="{{ user_review.rating }}">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="review-comment" class="form-label fw-bold small">Comment</label>
+                                        <textarea class="form-control" id="review-comment" rows="3" required>{{ user_review.comment }}</textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Update Review</button>
+                                </form>
+                                <div id="review-feedback" class="mt-2"></div>
+                            </div>
+                        </div>
+                    {% elif has_ordered %}
+                        <div class="card mb-4 shadow-sm" id="review-form-container">
+                            <div class="card-body">
+                                <h5 class="card-title">Write a Review</h5>
+                                <form id="review-form" data-method="POST">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Rating</label>
+                                        <div class="star-rating interactive" id="rating-input">
+                                            <i class="bi bi-star" data-value="1"></i>
+                                            <i class="bi bi-star" data-value="2"></i>
+                                            <i class="bi bi-star" data-value="3"></i>
+                                            <i class="bi bi-star" data-value="4"></i>
+                                            <i class="bi bi-star" data-value="5"></i>
+                                            <input type="hidden" name="rating" id="rating-value" value="0">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="review-comment" class="form-label fw-bold small">Comment</label>
+                                        <textarea class="form-control" id="review-comment" rows="3" required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                                </form>
+                                <div id="review-feedback" class="mt-2"></div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            You must purchase this product to leave a review.
+                        </div>
+                    {% endif %}
+                {% else %}
+                <div class="alert alert-info">
+                    Please <a href="{{ url_for('main.login', next=request.path) }}">login</a> to leave a review.
+                </div>
+                {% endif %}
+
+                <!-- Reviews List -->
+                <div id="reviews-list">
+                    <!-- Reviews injected here -->
+                    <p class="text-muted">Loading reviews...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Products -->
+        <div id="related-products-section" class="mt-5 pt-5 border-top d-none">
+            <h4 class="fw-bold mb-4">Related Products</h4>
+            <div id="related-products-list" class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4">
+                <!-- Related products injected here -->
+            </div>
+        </div>
+
+        <!-- Proposed Products -->
+        <div id="proposed-products-section" class="mt-5 pt-5 border-top d-none">
+            <h4 class="fw-bold mb-4">Recommended for You</h4>
+            <div id="proposed-products-list" class="row row-cols-2 row-cols-md-4 row-cols-lg-5 g-4">
+                <!-- Proposed products injected here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>window.PRODUCT_SKU = "{{ sku }}";</script>
+<script src="{{ url_for('static', filename='js/product.js') }}" defer></script>
+
+{% if product %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ product.name }}",
+  "image": [
+    {% for img in product.images %}
+    "{{ url_for('static', filename=img.url.split('/static/')[-1], _external=True) }}"{{ "," if not loop.last else "" }}
+    {% endfor %}
+   ],
+  "description": "{{ product.short_description }}",
+  "sku": "{{ product.product_sku }}",
+  "brand": {
+    "@type": "Brand",
+    "name": "E-Commerce Pro"
+  },
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ request.url }}",
+    "priceCurrency": "USD",
+    "price": "{{ product.base_price_cents / 100 }}",
+    "availability": "https://schema.org/InStock",
+    "itemCondition": "https://schema.org/NewCondition"
+  }
+}
+</script>
+{% endif %}
+{% endblock %}

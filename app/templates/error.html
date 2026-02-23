@@ -1,0 +1,16 @@
+{% extends "layout.html" %}
+
+{% block title %}Error {{ code }}{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="card shadow-sm mx-auto" style="max-width: 600px;">
+        <div class="card-body p-5">
+            <h1 class="display-1 fw-bold text-muted">{{ code }}</h1>
+            <h2 class="mb-4">{{ name }}</h2>
+            <p class="lead mb-4">{{ description }}</p>
+            <a href="/" class="btn btn-primary px-4">Go Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

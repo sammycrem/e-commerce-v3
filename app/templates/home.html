@@ -1,0 +1,300 @@
+{% extends "layout.html" %}
+
+{% block title %}My Profile - E-Commerce Pro{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body text-center p-5">
+                    <i class="bi bi-person-circle text-primary" style="font-size: 5rem;"></i>
+                    <h3 class="fw-bold mt-3">{{ current_user.username }}</h3>
+                    <p class="text-muted">{{ current_user.email }}</p>
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="{{ url_for('main.logout') }}" class="btn btn-outline-danger">
+                            <i class="bi bi-box-arrow-right me-2"></i>Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Account Information</h5>
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        <i class="bi bi-pencil-square me-1"></i>Edit Profile
+                    </button>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted small text-uppercase fw-bold">User ID</div>
+                        <div class="col-sm-8 fw-bold">{{ current_user.user_id }}</div>
+                    </div>
+                    <hr class="text-light">
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted small text-uppercase fw-bold">Username</div>
+                        <div class="col-sm-8 fw-bold">{{ current_user.username }}</div>
+                    </div>
+                    <hr class="text-light">
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted small text-uppercase fw-bold">Email</div>
+                        <div class="col-sm-8 fw-bold">{{ current_user.email }}</div>
+                    </div>
+                    <hr class="text-light">
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted small text-uppercase fw-bold">Phone</div>
+                        <div class="col-sm-8 fw-bold text-primary">{{ current_user.phone or 'Not provided' }}</div>
+                    </div>
+                    <hr class="text-light">
+                    <div class="row mb-3">
+                        <div class="col-sm-4 text-muted small text-uppercase fw-bold">Last Login</div>
+                        <div class="col-sm-8 fw-bold">{{ session.get('time', 'N/A') }}</div>
+                    </div>
+                    <hr class="text-light">
+                    <div class="row mb-0">
+                        <div class="col-sm-4 text-muted small text-uppercase fw-bold">Validation Status</div>
+                        <div class="col-sm-8">
+                            <span class="badge bg-{{ 'success' if current_user.validation else 'warning' }}">
+                                {{ 'Validated' if current_user.validation else 'Pending' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loyalty Rewards Section -->
+            {% if loyalty_promos %}
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">My Loyalty Rewards</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        {% for promo in loyalty_promos %}
+                        <div class="col-md-6">
+                            <div class="card h-100 border-primary border-2 shadow-sm bg-light">
+                                <div class="card-body text-center">
+                                    <h6 class="text-uppercase text-muted small fw-bold mb-2">Reward Code</h6>
+                                    <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+                                        <span class="badge bg-primary fs-5 px-3 py-2 font-monospace" id="promo-code-{{ loop.index }}">{{ promo.code }}</span>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard('promo-code-{{ loop.index }}')" title="Copy to clipboard">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                    <h3 class="fw-bold text-primary mb-1">
+                                        {% if promo.discount_type == 'FIXED' %}
+                                            <span class="currency-symbol">{{ currency_symbol }}</span>{{ "{:.2f}".format(promo.discount_value / 100) }}
+                                        {% else %}
+                                            {{ promo.discount_value }}%
+                                        {% endif %}
+                                    </h3>
+                                    <p class="small text-muted mb-2">Off your next order</p>
+                                    {% if promo.valid_to %}
+                                    <p class="small text-danger mb-0">Expires: {{ promo.valid_to.strftime('%Y-%m-%d') }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Address Management Section -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">Address Book</h5>
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+                        <i class="bi bi-plus-lg me-1"></i>New Address
+                    </button>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        {% for address in current_user.addresses %}
+                        <div class="col-md-6">
+                            <div class="card h-100 border p-3 shadow-none hover-shadow transition">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="badge bg-secondary small">{{ address.address_type|capitalize }}</span>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm p-0" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                            <li><a class="dropdown-item" href="{{ url_for('checkout_bp.edit_address', address_id=address.id) }}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('checkout_bp.shipping_address') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <input type="hidden" name="address_id" value="{{ address.id }}">
+                                                    <button type="submit" name="delete_address" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete</button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <h6 class="fw-bold mb-1">{{ address.first_name }} {{ address.last_name }}</h6>
+                                <p class="small text-muted mb-0">{{ address.address_line_1 }}</p>
+                                {% if address.address_line_2 %}<p class="small text-muted mb-0">{{ address.address_line_2 }}</p>{% endif %}
+                                <p class="small text-muted mb-0">{{ address.city }}, {{ address.state or '' }} {{ address.postal_code }}</p>
+                                <p class="small text-muted mb-2">{{ address.country_iso_code }}</p>
+                                <p class="small fw-bold mb-0 mt-auto"><i class="bi bi-telephone me-2"></i>{{ address.phone_number }}</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-12">
+                            <div class="alert alert-light text-center py-4 border dashed">
+                                <i class="bi bi-geo-alt fs-2 text-muted mb-2 d-block"></i>
+                                No addresses saved.
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-3">
+                <a href="/shop" class="btn btn-primary btn-lg px-4 fw-bold shadow-sm">
+                    <i class="bi bi-bag-check me-2"></i>Start Shopping
+                </a>
+                <a href="/admin/orders" class="btn btn-outline-secondary btn-lg px-4 fw-bold">
+                    <i class="bi bi-receipt me-2"></i>Order History
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">Edit Account Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{{ url_for('main.update_profile') }}" method="POST">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="email" class="form-label small fw-bold text-muted text-uppercase">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="phone" class="form-label small fw-bold text-muted text-uppercase">Phone Number</label>
+                        <input type="text" class="form-control" id="phone" name="phone" value="{{ current_user.phone or '' }}" placeholder="+1 (555) 000-0000">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Address Modal (Reused from checkout) -->
+<div class="modal fade" id="addAddressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">Add New Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form method="POST" action="{{ url_for('checkout_bp.shipping_address') }}">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label for="address_type" class="form-label small fw-bold text-muted text-uppercase">Address Type</label>
+                        <select class="form-select" id="address_type" name="address_type" required>
+                            <option value="shipping">Shipping</option>
+                            <option value="billing">Billing</option>
+                        </select>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label small fw-bold text-muted text-uppercase">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label small fw-bold text-muted text-uppercase">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address_line_1" class="form-label small fw-bold text-muted text-uppercase">Address Line 1</label>
+                        <input type="text" class="form-control" id="address_line_1" name="address_line_1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address_line_2" class="form-label small fw-bold text-muted text-uppercase">Address Line 2</label>
+                        <input type="text" class="form-control" id="address_line_2" name="address_line_2">
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="city" class="form-label small fw-bold text-muted text-uppercase">City</label>
+                            <input type="text" class="form-control" id="city" name="city" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="state" class="form-label small fw-bold text-muted text-uppercase">State</label>
+                            <input type="text" class="form-control" id="state" name="state">
+                        </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="postal_code" class="form-label small fw-bold text-muted text-uppercase">Postal Code</label>
+                            <input type="text" class="form-control" id="postal_code" name="postal_code" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="country" class="form-label small fw-bold text-muted text-uppercase">Country</label>
+                            <select class="form-select" id="country" name="country" required>
+                                {% for country in countries %}
+                                    <option value="{{ country.iso_code }}">{{ country.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="phone_number" class="form-label small fw-bold text-muted text-uppercase">Phone Number</label>
+                        <input type="text" class="form-control" id="phone_number" name="phone_number">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg fw-bold">Save Address</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            // Visual feedback
+            const btn = document.querySelector(`button[onclick="copyToClipboard('${elementId}')"]`);
+            const icon = btn.querySelector('i');
+
+            // Change icon to checkmark
+            icon.classList.remove('bi-clipboard');
+            icon.classList.add('bi-check-lg');
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-success');
+
+            // Revert after 2 seconds
+            setTimeout(() => {
+                icon.classList.remove('bi-check-lg');
+                icon.classList.add('bi-clipboard');
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-secondary');
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert('Failed to copy code to clipboard.');
+        });
+    }
+</script>
+{% endblock %}

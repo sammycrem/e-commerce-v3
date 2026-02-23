@@ -1,0 +1,176 @@
+{% extends "account/base.html" %}
+
+{% block title %}Review Order Items - {{ order.public_order_id }}{% endblock %}
+
+{% block head %}
+<style>
+    .star-rating {
+        color: #ffc107;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+    .star-rating i:hover,
+    .star-rating i:hover ~ i {
+        color: #ffca2c;
+    }
+    .product-review-card img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block account_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Review Items</h2>
+    <a href="{{ url_for('account.order_detail', public_order_id=order.public_order_id) }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-2"></i>Back to Order</a>
+</div>
+
+<div class="row g-4">
+    {% for item in order.items %}
+    {% set product = item.product_snapshot %}
+    <div class="col-12">
+        <div class="card shadow-sm border-0 product-review-card">
+            <div class="card-body">
+                <div class="d-flex flex-column flex-md-row gap-4">
+                    <!-- Product Info -->
+                    <div class="d-flex gap-3 align-items-start" style="min-width: 250px;">
+                        {% set img_url = product.images[0].url if product.images else '' %}
+                        {% if img_url %}
+                            <img src="{{ img_url|icon_url }}" alt="{{ product.name }}">
+                        {% else %}
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;"><i class="bi bi-image text-muted fs-4"></i></div>
+                        {% endif %}
+                        <div>
+                            <h5 class="card-title fw-bold mb-1">{{ product.name }}</h5>
+                            <p class="text-muted small mb-0">
+                                {% if product.variants and product.variants|length > 0 %}
+                                    {{ product.variants[0].color_name }} / {{ product.variants[0].size }}
+                                {% else %}
+                                    {{ item.variant_sku }}
+                                {% endif %}
+                            </p>
+                            <small class="text-muted">SKU: {{ item.variant_sku }}</small>
+                        </div>
+                    </div>
+
+                    <!-- Review Form -->
+                    <div class="flex-grow-1">
+                        <form class="review-form" data-sku="{{ product.product_sku }}">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Rate this product</label>
+                                <div class="star-rating" data-sku="{{ product.product_sku }}">
+                                    <i class="bi bi-star" data-val="1"></i>
+                                    <i class="bi bi-star" data-val="2"></i>
+                                    <i class="bi bi-star" data-val="3"></i>
+                                    <i class="bi bi-star" data-val="4"></i>
+                                    <i class="bi bi-star" data-val="5"></i>
+                                    <input type="hidden" name="rating" value="0">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Review</label>
+                                <textarea class="form-control" name="comment" rows="2" placeholder="Share your thoughts..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm">Submit Review</button>
+                            <span class="feedback ms-2 small fw-bold"></span>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Star Rating Logic
+    document.querySelectorAll('.star-rating').forEach(container => {
+        const stars = container.querySelectorAll('i');
+        const input = container.querySelector('input');
+
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                const val = parseInt(star.dataset.val);
+                input.value = val;
+                stars.forEach(s => {
+                    if (parseInt(s.dataset.val) <= val) {
+                        s.classList.remove('bi-star');
+                        s.classList.add('bi-star-fill');
+                    } else {
+                        s.classList.remove('bi-star-fill');
+                        s.classList.add('bi-star');
+                    }
+                });
+            });
+        });
+    });
+
+    // Form Submission
+    document.querySelectorAll('.review-form').forEach(form => {
+        form.dataset.method = 'POST'; // Default
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const sku = form.dataset.sku;
+            const btn = form.querySelector('button');
+            const feedback = form.querySelector('.feedback');
+            const rating = form.querySelector('input[name="rating"]').value;
+            const comment = form.querySelector('textarea').value;
+            const method = form.dataset.method || 'POST';
+
+            if (rating == 0) {
+                feedback.textContent = "Please select a rating.";
+                feedback.className = "feedback ms-2 small fw-bold text-danger";
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = "Submitting...";
+            feedback.textContent = "";
+
+            try {
+                const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                const res = await fetch(`/api/products/${encodeURIComponent(sku)}/reviews`, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrf
+                    },
+                    body: JSON.stringify({ rating, comment })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    feedback.textContent = "Review saved!";
+                    feedback.className = "feedback ms-2 small fw-bold text-success";
+                    btn.textContent = "Saved";
+                    // Reset to POST just in case, though usually done.
+                } else if (res.status === 409) {
+                    feedback.textContent = "You reviewed this. Update?";
+                    feedback.className = "feedback ms-2 small fw-bold text-warning";
+                    btn.textContent = "Update Review";
+                    btn.disabled = false;
+                    form.dataset.method = 'PUT'; // Switch to update mode
+                } else {
+                    feedback.textContent = data.error || "Error";
+                    feedback.className = "feedback ms-2 small fw-bold text-danger";
+                    btn.textContent = "Retry";
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                console.error(err);
+                feedback.textContent = "Network error";
+                feedback.className = "feedback ms-2 small fw-bold text-danger";
+                btn.disabled = false;
+                btn.textContent = "Retry";
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

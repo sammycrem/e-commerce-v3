@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.venv
+*.log
+app.log
+util.log
+flask_session/
+encrypt_config_file.txt
+shop.db

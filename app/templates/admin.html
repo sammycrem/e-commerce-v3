@@ -1,0 +1,714 @@
+{% extends "layout.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4">Admin Dashboard</h1>
+
+    <ul class="nav nav-pills mb-4" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'products' or not active_tab else '' }} tab-button" data-tab="products" id="products-tab" type="button">Products</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'orders' else '' }} tab-button" data-tab="orders" id="orders-tab" type="button">Orders</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'reports' else '' }} tab-button" data-tab="reports" id="reports-tab" type="button">Reports</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'promos' else '' }} tab-button" data-tab="promos" id="promos-tab" type="button">Promo Codes</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'countries' else '' }} tab-button" data-tab="countries" id="countries-tab" type="button">Countries</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'categories' else '' }} tab-button" data-tab="categories" id="categories-tab" type="button">Categories</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'gallery' else '' }} tab-button" data-tab="gallery" id="gallery-tab" type="button">Gallery</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'settings' else '' }} tab-button" data-tab="settings" id="settings-tab" type="button">Settings</button>
+        </li>
+    </ul>
+
+    <!-- GALLERY TAB -->
+    <div id="tab-gallery" class="tab-content {{ 'd-none' if active_tab != 'gallery' else '' }}">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Photo Gallery</h2>
+                <div class="d-flex gap-2">
+                    <select id="gallery-filter" class="form-select form-select-sm">
+                        <option value="all">All Photos</option>
+                        <option value="unused">Unused Only</option>
+                        <option value="linked">Linked Only</option>
+                    </select>
+                    <button id="btn-refresh-gallery" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button id="btn-upload-gallery" class="btn btn-sm btn-primary">
+                        <i class="fas fa-upload me-1"></i> Upload
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="gallery-grid" class="row g-3">
+                    <!-- Photos loaded here -->
+                </div>
+                <div id="gallery-loading" class="text-center py-5 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <div id="gallery-empty" class="text-center py-5 d-none text-muted">
+                    <i class="far fa-images fa-3x mb-3"></i>
+                    <p>No photos found matching your criteria.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRODUCTS TAB -->
+    <div id="tab-products" class="tab-content pb-floating-menu {{ 'd-none' if active_tab and active_tab != 'products' else '' }}">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0">Products List</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 border-bottom">
+                            <button id="btn-new-product" class="btn btn-primary w-100 mb-2">
+                                <i class="fas fa-plus me-2"></i>Create New Product
+                            </button>
+                            <div class="d-flex gap-2 mb-2">
+                                <select id="product-filter-status" class="form-select form-select-sm">
+                                    <option value="all">All Status</option>
+                                    <option value="published">Published</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="decommissioned">Decommissioned</option>
+                                </select>
+                                <select id="product-filter-category" class="form-select form-select-sm">
+                                    <option value="all">All Categories</option>
+                                    <!-- Loaded via JS -->
+                                </select>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <div class="dropdown flex-grow-1">
+                                    <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-download me-2"></i>Export
+                                    </button>
+                                    <ul class="dropdown-menu w-100">
+                                        <li><a class="dropdown-item" href="#" id="btn-export-json">Export as JSON</a></li>
+                                        <li><a class="dropdown-item" href="#" id="btn-export-csv">Export as CSV</a></li>
+                                    </ul>
+                                </div>
+                                <button id="btn-import-products" class="btn btn-outline-secondary flex-grow-1">
+                                    <i class="fas fa-upload me-2"></i>Import
+                                </button>
+                            </div>
+                        </div>
+                        <div id="product-list" class="list-group list-group-flush overflow-auto" style="max-height: 600px;">
+                            <!-- Products will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h2 class="h5 mb-0" id="editor-title">Create / Edit Product</h2>
+                        <div id="admin-feedback" class="alert alert-dismissible fade show mb-0 d-none" role="alert"></div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Product SKU</label>
+                                <input id="product_sku" type="text" placeholder="e.g., TSHIRT-001" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Product Name</label>
+                                <input id="name" type="text" placeholder="Product Name" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Category</label>
+                                <select id="category" class="form-select"></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Base Price (<span class="currency-symbol">{{ currency_symbol }}</span>)</label>
+                                <input id="base_price" type="text" placeholder="e.g. 24.99" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Message (Badge)</label>
+                                <input id="message" type="text" placeholder="e.g., New Arrival, Sale" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Status</label>
+                                <select id="status" class="form-select">
+                                    <option value="draft">Draft</option>
+                                    <option value="published">Published</option>
+                                    <option value="decommissioned">Decommissioned</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Description</label>
+                            <textarea id="description" class="form-control" rows="3" placeholder="Description"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Short Description</label>
+                            <textarea id="short_description" class="form-control" rows="2" placeholder="Short Description"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Product Details</label>
+                            <textarea id="product_details" class="form-control" rows="4" placeholder="Product Details"></textarea>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Related Products (SKUs, comma separated)</label>
+                                <input id="related_products" type="text" placeholder="SKU1, SKU2" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Proposed Products (SKUs, comma separated)</label>
+                                <input id="proposed_products" type="text" placeholder="SKU3, SKU4" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Tag 1</label>
+                                <input id="tag1" type="text" placeholder="Tag 1" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Tag 2</label>
+                                <input id="tag2" type="text" placeholder="Tag 2" class="form-control">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Tag 3</label>
+                                <input id="tag3" type="text" placeholder="Tag 3" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Weight (grams)</label>
+                                <input id="weight_grams" type="number" placeholder="e.g. 500" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Length (cm)</label>
+                                <input id="length" type="number" placeholder="Length" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Width (cm)</label>
+                                <input id="width" type="number" placeholder="Width" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Height (cm)</label>
+                                <input id="height" type="number" placeholder="Height" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h3 class="h6 mb-0 fw-bold">Product Images</h3>
+                                <button id="add-product-image" class="btn btn-sm btn-outline-secondary">Add Image</button>
+                            </div>
+                            <div id="product-images" class="row g-2"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h3 class="h6 mb-0 fw-bold">Variants</h3>
+                                <button id="add-variant" class="btn btn-sm btn-outline-secondary">Add Variant</button>
+                            </div>
+                            <div id="variants" class="accordion accordion-flush border rounded"></div>
+                        </div>
+
+                        <div class="d-flex gap-2 pt-3 border-top d-lg-none">
+                             <!-- Fallback for mobile or if floating menu is hidden -->
+                             <p class="text-muted small">Use the floating menu to save actions.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Action Menu -->
+        <div class="floating-menu shadow-lg">
+            <div class="d-flex gap-2 align-items-center">
+                <button id="save-product" class="btn btn-primary btn-floating" title="Save Product">
+                    <i class="fas fa-save"></i> <span class="d-none d-md-inline">Save</span>
+                </button>
+                <button id="btn-duplicate-product" class="btn btn-secondary btn-floating" title="Duplicate Product">
+                    <i class="fas fa-copy"></i> <span class="d-none d-md-inline">Duplicate</span>
+                </button>
+                <div class="vr mx-2"></div>
+                <button id="delete-product" class="btn btn-danger btn-floating" title="Delete Product">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROMOS TAB -->
+    <div id="tab-promos" class="tab-content {{ 'd-none' if active_tab != 'promos' else '' }}">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0">Promo Codes</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 border-bottom">
+                            <button id="btn-new-promo" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Create New Promo
+                            </button>
+                        </div>
+                        <div id="promo-list" class="list-group list-group-flush overflow-auto" style="max-height: 600px;">
+                            <!-- Promos will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0" id="promo-editor-title">Create / Edit Promo Code</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Promo Code</label>
+                                <input id="promo_code" type="text" placeholder="e.g., SAVE20" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Discount Type</label>
+                                <select id="promo_type" class="form-select">
+                                    <option value="PERCENT">Percentage (%)</option>
+                                    <option value="FIXED">Fixed Amount (<span class="currency-symbol">{{ currency_symbol }}</span>)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Discount Value</label>
+                                <input id="promo_value" type="number" placeholder="e.g., 20" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Valid Until</label>
+                                <input id="promo_valid_to" type="datetime-local" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Specific User (Optional)</label>
+                                <select id="promo_user_id" class="form-select">
+                                    <option value="">Global (All Users)</option>
+                                    <!-- Users will be loaded here -->
+                                </select>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="promo_active" checked>
+                                    <label class="form-check-label fw-bold small" for="promo_active">
+                                        Is Active
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold">Description</label>
+                            <textarea id="promo_description" class="form-control" rows="2" placeholder="e.g., 20% off your entire order!"></textarea>
+                        </div>
+
+                        <div class="d-flex gap-2 pt-3 border-top">
+                            <button id="save-promo" class="btn btn-primary px-4">Save Promo Code</button>
+                            <button id="delete-promo" class="btn btn-outline-danger ms-auto">Delete Promo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" class="tab-content {{ 'd-none' if active_tab != 'settings' else '' }}">
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0">Application Settings</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <h3 class="h6 fw-bold mb-3">Global Currency</h3>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Select Active Currency</label>
+                                <select id="active-currency-select" class="form-select"></select>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <h3 class="h6 fw-bold mb-3">Global Promotion Message</h3>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="global_promo_enabled">
+                                <label class="form-check-label" for="global_promo_enabled">Enable Global Promo Banner</label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Message Text</label>
+                                <input type="text" id="global_promo_message" class="form-control" placeholder="e.g. 10% OFF everything from 2 items. Code: F0RYOU10">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <h3 class="h6 fw-bold mb-3">VAT Calculation Mode</h3>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="vat_mode" id="vat_mode_shipping" value="SHIPPING_ADDRESS" checked>
+                                <label class="form-check-label" for="vat_mode_shipping">
+                                    Based on Shipping Address
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="vat_mode" id="vat_mode_default" value="DEFAULT_COUNTRY">
+                                <label class="form-check-label" for="vat_mode_default">
+                                    Based on Default Country
+                                </label>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <h3 class="h6 fw-bold mb-3">Loyalty Program</h3>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="loyalty_enabled">
+                                <label class="form-check-label" for="loyalty_enabled">Enable Loyalty Program</label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Loyalty Credit Percentage (%)</label>
+                                <input type="number" id="loyalty_percentage" class="form-control" placeholder="e.g. 5" min="0" max="100" step="0.1">
+                                <div class="form-text">Percentage of order total (excluding tax/shipping) awarded as credit.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Loyalty Expiration (days)</label>
+                                <input type="number" id="loyalty_expiration_days" class="form-control" placeholder="e.g. 60" min="1" step="1">
+                                <div class="form-text">Number of days before loyalty rewards expire (default: 60).</div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <button id="save-settings" class="btn btn-primary px-4">Save Settings</button>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-3">
+                            <h3 class="h6 fw-bold mb-3">Manage Currencies</h3>
+                            <div class="input-group mb-3">
+                                <input type="text" id="new-currency-symbol" class="form-control" placeholder="e.g. ¥">
+                                <button id="add-currency" class="btn btn-outline-primary">Add Currency</button>
+                            </div>
+                            <ul id="currencies-list" class="list-group">
+                                <!-- Loaded via JS -->
+                            </ul>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                             <h3 class="h6 fw-bold mb-3 text-danger">Danger Zone</h3>
+                             <div class="border border-danger rounded p-3 bg-light">
+                                 <p class="text-danger small fw-bold">Factory Reset Application</p>
+                                 <p class="small text-muted">This will delete ALL data (products, orders, users) and restore the application to its initial state.</p>
+                                 <div class="mb-3">
+                                     <label class="form-label small fw-bold">Enter Reset Code</label>
+                                     <input type="password" id="reset_code" class="form-control" placeholder="Enter APP_RESET_CODE">
+                                 </div>
+                                 <button id="btn-factory-reset" class="btn btn-danger w-100">
+                                     <i class="fas fa-exclamation-triangle me-2"></i>Factory Reset
+                                 </button>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CATEGORIES TAB -->
+    <div id="tab-categories" class="tab-content {{ 'd-none' if active_tab != 'categories' else '' }}">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0">Categories List</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 border-bottom">
+                            <button id="btn-new-category" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Add New Category
+                            </button>
+                        </div>
+                        <div id="category-list" class="list-group list-group-flush overflow-auto" style="max-height: 600px;">
+                            <!-- Categories will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0" id="category-editor-title">Manage Category</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Category Name</label>
+                            <input id="cat_name" type="text" placeholder="e.g., Electronics" class="form-control">
+                        </div>
+                        <div class="d-flex gap-2 pt-3 border-top">
+                            <button id="save-category" class="btn btn-primary px-4">Save Category</button>
+                            <button id="delete-category" class="btn btn-outline-danger ms-auto">Delete Category</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COUNTRIES TAB -->
+    <div id="tab-countries" class="tab-content {{ 'd-none' if active_tab != 'countries' else '' }}">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0">Countries List</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 border-bottom">
+                            <button id="btn-new-country" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Add New Country
+                            </button>
+                        </div>
+                        <div id="country-list" class="list-group list-group-flush overflow-auto" style="max-height: 600px;">
+                            <!-- Countries loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0" id="country-editor-title">Edit Country Settings</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Country Name</label>
+                                <input id="country_name" type="text" placeholder="e.g. Germany" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">ISO Code (2 chars)</label>
+                                <input id="country_iso" type="text" placeholder="e.g. DE" class="form-control" maxlength="2">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Default VAT Rate (0.19 = 19%)</label>
+                                <input id="country_vat" type="number" step="0.01" placeholder="e.g. 0.19" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Currency Code</label>
+                                <input id="country_currency" type="text" placeholder="e.g. EUR" class="form-control" maxlength="3">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Shipping Cost (Cents)</label>
+                                <input id="country_shipping" type="number" placeholder="e.g. 800 for 8.00" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Free Shipping Threshold (Cents)</label>
+                                <input id="country_free_threshold" type="number" placeholder="e.g. 3900 for 39.00" class="form-control">
+                                <small class="text-muted">Leave empty for no free shipping.</small>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 pt-3 border-top">
+                            <button id="save-country" class="btn btn-primary px-4">Save Country</button>
+                            <button id="delete-country" class="btn btn-outline-danger ms-auto">Delete Country</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GALLERY UPLOAD MODAL -->
+    <div class="modal fade" id="galleryUploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Photo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Select Image</label>
+                        <input class="form-control" type="file" id="gallery-file-input" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Filename (Optional)</label>
+                        <input class="form-control" type="text" id="gallery-filename-input" placeholder="e.g. summer_collection_01">
+                        <div class="form-text">Leave extension out. Will be saved as .webp</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="btn-gallery-upload-confirm">Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMPORT MODAL -->
+    <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Products</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="importForm">
+                        <div class="mb-3">
+                            <label for="importFile" class="form-label">Select File (JSON or CSV)</label>
+                            <input class="form-control" type="file" id="importFile" accept=".json,.csv">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Import Mode</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="importMode" id="modeOverride" value="override">
+                                <label class="form-check-label" for="modeOverride">
+                                    Override all (Replace DB)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="importMode" id="modeSkip" value="skip" checked>
+                                <label class="form-check-label" for="modeSkip">
+                                    Skip existing products (by SKU)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="importMode" id="modeUpdate" value="update">
+                                <label class="form-check-label" for="modeUpdate">
+                                    Update existing products
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="btn-confirm-import">Import</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDERS TAB -->
+    <div id="tab-orders" class="tab-content {{ 'd-none' if active_tab != 'orders' else '' }}">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h2 class="h5 mb-0">Recent Orders</h2>
+            </div>
+            <div class="card-body">
+                <div id="orders-list"></div>
+                <div id="order-detail" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPORTS TAB -->
+    <div id="tab-reports" class="tab-content {{ 'd-none' if active_tab != 'reports' else '' }}">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Financial Reports</h2>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Report Type</label>
+                        <select id="report-type" class="form-select">
+                            <option value="summary">Executive Summary</option>
+                            <option value="daily">Sales Over Time</option>
+                            <option value="items">Sales by Item</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Start Date</label>
+                        <input id="report-start" type="date" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">End Date</label>
+                        <input id="report-end" type="date" class="form-control">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end gap-2">
+                        <button id="btn-generate-report" class="btn btn-primary flex-grow-1">Generate</button>
+                        <button id="btn-export-report" class="btn btn-outline-secondary" title="Export CSV"><i class="fas fa-file-csv"></i></button>
+                    </div>
+                </div>
+
+                <div id="report-results" class="table-responsive">
+                    <p class="text-muted text-center py-5">Select filters and click Generate.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('d-none'));
+      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = document.getElementById('tab-' + btn.dataset.tab);
+      if (target) target.classList.remove('d-none');
+    });
+  });
+});
+</script>
+{% endblock %}
+
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    .list-group-item.active {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.appConfig = {
+        currencySymbol: "{{ currency_symbol }}"
+    };
+</script>
+<script src="{{ url_for('static', filename='js/admin_crud.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_orders.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_reports.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_promo.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_countries.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_categories.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_gallery.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_settings.js') }}" defer></script>
+{% endblock %}

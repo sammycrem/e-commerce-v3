@@ -1,0 +1,72 @@
+{% extends "account/base.html" %}
+
+{% block title %}Request Return - Order {{ order.public_order_id }}{% endblock %}
+
+{% block account_content %}
+<h2 class="mb-4">Request Return for Order #{{ order.public_order_id }}</h2>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+        <p class="text-muted">Please select the items you wish to return and provide a reason. Our team will review your request and send instructions.</p>
+
+        <form action="{{ url_for('account.request_return', public_order_id=order.public_order_id) }}" method="POST">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <h5 class="fw-bold mb-3">Select Items to Return</h5>
+            <div class="table-responsive mb-4">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="width: 50px;"><input type="checkbox" id="select-all" class="form-check-input"></th>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="return_items" value="{{ item.variant_sku }}" class="form-check-input item-checkbox">
+                            </td>
+                            <td>
+                                {% set snapshot = item.product_snapshot or {} %}
+                                <div class="d-flex align-items-center">
+                                    {% if snapshot.images and snapshot.images[0] %}
+                                    <img src="{{ snapshot.images[0].url|icon_url }}" alt="{{ snapshot.name }}" class="me-2 rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% endif %}
+                                    <div>
+                                        <span class="fw-bold">{{ snapshot.name or item.variant_sku }}</span>
+                                        <br>
+                                        <small class="text-muted">{{ snapshot.variant_sku or item.variant_sku }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ (item.unit_price_cents / 100)|round(2) }} {{ currency_symbol }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mb-4">
+                <label for="return_reason" class="form-label fw-bold">Reason for Return</label>
+                <textarea class="form-control" id="return_reason" name="return_reason" rows="4" placeholder="Please describe why you are returning these items (e.g., damaged, wrong size, changed mind)..." required></textarea>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('account.order_detail', public_order_id=order.public_order_id) }}" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Submit Return Request</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('select-all').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.item-checkbox');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+</script>
+{% endblock %}

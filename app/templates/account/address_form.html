@@ -1,0 +1,91 @@
+{% extends "account/base.html" %}
+
+{% block title %}{% if address %}Edit Address{% else %}Add Address{% endif %}{% endblock %}
+
+{% block account_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">{% if address %}Edit Address{% else %}Add Address{% endif %}</h2>
+    <a href="{{ url_for('account.addresses') }}" class="btn btn-outline-secondary">Cancel</a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <form method="POST">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label class="form-label">Address Type</label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="address_type" id="type_shipping" value="shipping" {% if not address or address.address_type == 'shipping' %}checked{% endif %}>
+                        <label class="form-check-label" for="type_shipping">Shipping</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="address_type" id="type_billing" value="billing" {% if address and address.address_type == 'billing' %}checked{% endif %}>
+                        <label class="form-check-label" for="type_billing">Billing</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="first_name" class="form-label">First Name</label>
+                    <input type="text" class="form-control" id="first_name" name="first_name" value="{{ address.first_name if address else '' }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="last_name" class="form-label">Last Name</label>
+                    <input type="text" class="form-control" id="last_name" name="last_name" value="{{ address.last_name if address else '' }}" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="address_line_1" class="form-label">Address Line 1</label>
+                <input type="text" class="form-control" id="address_line_1" name="address_line_1" value="{{ address.address_line_1 if address else '' }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="address_line_2" class="form-label">Address Line 2 (Optional)</label>
+                <input type="text" class="form-control" id="address_line_2" name="address_line_2" value="{{ address.address_line_2 if address else '' }}">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="city" class="form-label">City</label>
+                    <input type="text" class="form-control" id="city" name="city" value="{{ address.city if address else '' }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="state" class="form-label">State / Province</label>
+                    <input type="text" class="form-control" id="state" name="state" value="{{ address.state if address else '' }}">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="postal_code" class="form-label">Postal Code</label>
+                    <input type="text" class="form-control" id="postal_code" name="postal_code" value="{{ address.postal_code if address else '' }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="country_iso_code" class="form-label">Country</label>
+                    <select class="form-select" id="country_iso_code" name="country_iso_code" required>
+                        <option value="">Select Country</option>
+                        {% for country in countries %}
+                            <option value="{{ country.iso_code }}" {% if address and address.country_iso_code == country.iso_code %}selected{% endif %}>{{ country.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="phone_number" class="form-label">Phone Number</label>
+                <input type="tel" class="form-control" id="phone_number" name="phone_number" value="{{ address.phone_number if address else '' }}">
+            </div>
+
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="is_default" name="is_default" value="true" {% if address and address.is_default %}checked{% endif %}>
+                <label class="form-check-label" for="is_default">Set as default address</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">{% if address %}Update Address{% else %}Save Address{% endif %}</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
