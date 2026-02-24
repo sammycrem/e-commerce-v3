@@ -26,12 +26,6 @@
         transform: scale(1.05);
     }
 
-    .product-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 2rem;
-    }
-
     .product-card {
         height: auto;
         display: flex;
@@ -268,18 +262,15 @@
 
 <div class="container py-4">
     <!-- Featured Section -->
-    <div class="row mb-1" id="featured-products">
-        <div class="col-12 d-flex justify-content-between align-items-end mb-4">
-            <!-- <div>
-                <h2 class="fw-bold mb-1 h1">Featured Products</h2>
-                <p class="text-muted mb-0">Our top picks for this week</p>
-            </div> -->
+    <div id="featured-products" class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold mb-0">Featured Products</h2>
             <a href="{{ url_for('main.shop_page') }}" class="btn btn-link text-primary fw-bold text-decoration-none p-0">
                 View All <i class="bi bi-chevron-right ms-1"></i>
             </a>
         </div>
 
-        <div id="product-grid" class="product-grid">
+        <div id="product-grid" class="row g-4">
             <div class="col-12 text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading products...</span>
