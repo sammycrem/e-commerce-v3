@@ -17,16 +17,6 @@
         transform: scale(1.05);
     }
 
-    .category-card {
-        cursor: pointer;
-    }
-    .category-card img {
-        transition: transform 0.5s ease;
-    }
-    .category-card:hover img {
-        transform: scale(1.1);
-    }
-
     .product-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -50,56 +40,223 @@
     .fw-bold {
         font-weight: 600 !important;
     }
+
+    /* Carousel Banner Styles */
+    .banner-section {
+        background-color: #fff;
+        margin-bottom: 3rem;
+    }
+
+    .side-buttons {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 1rem;
+        height: 100%;
+        padding: 1.5rem;
+        background-color: #f8f9fa;
+    }
+
+    .side-btn {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        padding: 1rem;
+        text-align: center;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        border-radius: 0;
+        color: #212529;
+        text-decoration: none;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .side-btn:hover {
+        background-color: #e9ecef;
+        color: #0d6efd;
+        text-decoration: none;
+    }
+
+    .carousel-container {
+        height: 450px;
+        overflow: hidden;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        position: relative;
+    }
+
+    .carousel-item-custom {
+        display: flex;
+        height: 450px;
+        width: 100%;
+        align-items: center;
+    }
+
+    .banner-text-side {
+        flex: 0 0 50%;
+        padding: 3rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        z-index: 2;
+        background: #fff;
+    }
+
+    .banner-image-side {
+        flex: 0 0 50%;
+        display: flex;
+        height: 100%;
+        z-index: 1;
+    }
+
+    .banner-image-side img {
+        width: 50%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .btn-shop-now {
+        background-color: #212529;
+        color: #fff;
+        padding: 0.8rem 2.5rem;
+        border-radius: 0;
+        font-weight: bold;
+        text-transform: uppercase;
+        display: inline-block;
+        width: fit-content;
+        margin-top: 1.5rem;
+        text-decoration: none;
+        transition: background-color 0.3s;
+    }
+
+    .btn-shop-now:hover {
+        background-color: #000;
+        color: #fff;
+    }
+
+    /* Multi-screen Responsiveness */
+    @media (max-width: 991.98px) {
+        .banner-section {
+            margin-bottom: 2rem;
+        }
+        .carousel-container, .carousel-item-custom {
+            height: auto;
+            border: none;
+        }
+        .carousel-item-custom {
+            flex-direction: column !important; /* Stack text and images */
+        }
+        .banner-text-side {
+            flex: 0 0 auto;
+            width: 100%;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            align-items: center;
+        }
+        .banner-image-side {
+            flex: 0 0 auto;
+            width: 100%;
+            height: 300px;
+        }
+        .side-buttons {
+            flex-direction: row;
+            flex-wrap: wrap;
+            height: auto;
+            padding: 0.75rem;
+            gap: 0.5rem;
+        }
+        .side-btn {
+            flex: 1 1 calc(33.333% - 0.5rem);
+            font-size: 0.7rem;
+            padding: 0.6rem 0.25rem;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .side-btn {
+            flex: 1 1 100%;
+        }
+        .banner-image-side {
+            height: 200px;
+        }
+        .display-5 {
+            font-size: 1.8rem;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<div class="hero-section position-relative overflow-hidden mb-5">
-    <div class="hero-overlay position-absolute w-100 h-100" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.9) 0%, rgba(13, 202, 240, 0.8) 100%); z-index: 1;"></div>
-    <img src="{{ url_for('static', filename='assets/img/header-bg.jpg') }}" alt="Background" class="position-absolute w-100 h-100 object-fit-cover" style="z-index: 0;">
 
-    <div class="container position-relative py-5" style="z-index: 2;">
-        <div class="row align-items-center py-5">
-            <div class="col-lg-6 text-white animate__animated animate__fadeInLeft">
-                <span class="badge bg-light text-primary mb-3 px-3 py-2 rounded-pill fw-bold">NEW COLLECTION 2024</span>
-                <h1 class="display-2 fw-extrabold mb-4 lh-1">Elevate Your Lifestyle With Premium Goods</h1>
-                <p class="lead mb-5 opacity-90 fs-4">Experience the perfect blend of style, quality, and technology. Our curated collections are designed for those who don't compromise.</p>
-                <div class="d-flex gap-3">
-                    <a href="{{ url_for('main.shop_page') }}" class="btn btn-light btn-lg px-5 py-3 fw-bold text-primary shadow hover-scale">
-                        Shop Collection <i class="bi bi-arrow-right ms-2"></i>
-                    </a>
-                    <a href="#featured-products" class="btn btn-outline-light btn-lg px-5 py-3 fw-bold hover-scale">
-                        Discover More
-                    </a>
-                </div>
-                <div class="mt-5 d-flex align-items-center gap-4 opacity-75">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-check-circle-fill"></i> <span class="small fw-bold">Verified Quality</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-check-circle-fill"></i> <span class="small fw-bold">Fast Shipping</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-check-circle-fill"></i> <span class="small fw-bold">Secure Checkout</span>
-                    </div>
-                </div>
+<div class="container-fluid banner-section px-0">
+    <div class="row g-0">
+        <!-- Left Column (3 buttons) -->
+        <div class="col-lg-3 col-12 order-2 order-lg-1">
+            <div class="side-buttons">
+                <a href="#" class="side-btn"><i class="bi bi-truck me-2"></i> Free Shipping</a>
+                <a href="#" class="side-btn"><i class="bi bi-shield-check me-2"></i> Secure Payment</a>
+                <a href="#" class="side-btn"><i class="bi bi-headset me-2"></i> 24/7 Support</a>
             </div>
-            <div class="col-lg-6 d-none d-lg-block animate__animated animate__zoomIn">
-                <div class="hero-image-container position-relative">
-                    <div class="hero-blob position-absolute top-50 start-50 translate-middle" style="width: 500px; height: 500px; background: rgba(255,255,255,0.1); border-radius: 50%; filter: blur(50px);"></div>
-                    <img src="{{ url_for('static', filename='assets/img/hero.png') }}" alt="Hero Image" class="img-fluid position-relative" style="z-index: 1; filter: drop-shadow(0 20px 50px rgba(0,0,0,0.3));">
+        </div>
+
+        <!-- Middle Column (Carousel 50% on desktop) -->
+        <div class="col-lg-6 col-12 order-1 order-lg-2">
+            <div id="categoryCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% for item in category_data %}
+                    <div class="carousel-item {% if loop.first %}active{% endif %}">
+                        <div class="carousel-container shadow-sm">
+                            <!-- If even index, text on left. If odd, text on right (reversed) -->
+                            <div class="carousel-item-custom {% if loop.index0 % 2 != 0 %}flex-row-reverse{% endif %}">
+                                <div class="banner-text-side">
+                                    <h2 class="display-5 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
+                                    <a href="{{ url_for('main.shop_page', category=item.category.name) }}" class="btn-shop-now">Shop Now</a>
+                                </div>
+                                <div class="banner-image-side">
+                                    {% for prod in item.products %}
+                                        {% if prod.images %}
+                                            <img src="{{ prod.images[0].url | big_url }}" alt="{{ prod.name }}">
+                                        {% else %}
+                                            <img src="{{ url_for('static', filename='img/placeholder.webp') }}" alt="Placeholder">
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
+                <!-- Carousel Controls -->
+                <button class="carousel-control-prev" type="button" data-bs-target="#categoryCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#categoryCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Column (3 buttons) -->
+        <div class="col-lg-3 col-12 order-3">
+            <div class="side-buttons">
+                <a href="#" class="side-btn"><i class="bi bi-star me-2"></i> Best Quality</a>
+                <a href="#" class="side-btn"><i class="bi bi-arrow-repeat me-2"></i> Easy Returns</a>
+                <a href="#" class="side-btn"><i class="bi bi-gift me-2"></i> Gift Cards</a>
             </div>
         </div>
     </div>
 </div>
 
 <div class="container py-4">
-    <!-- Search Bar Section -->
-    <div class="row mb-5 justify-content-center">
+    <!-- Search Bar Section (Relocated after banners) -->
+    <div class="row mb-5 justify-content-center" id="search-section">
         <div class="col-lg-10">
-            <div class="card border-0 shadow-sm p-2 rounded-4">
+            <div class="card border-0 shadow-sm p-2 rounded-4 bg-white">
                 <div class="card-body p-2">
                     <form id="product-search-form" class="d-flex align-items-center">
                         <div class="input-group">
@@ -113,40 +270,6 @@
                             </button>
                         </div>
                     </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Categories Section -->
-    <div class="row mb-5 g-4">
-        <div class="col-md-4">
-            <div class="category-card position-relative overflow-hidden rounded-4 shadow-sm group">
-                <img src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=600&q=80" alt="Fashion" class="w-100 transition duration-500 group-hover:scale-110" style="height: 250px; object-fit: cover;">
-                <div class="position-absolute bottom-0 start-0 w-100 p-4 text-white" style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
-                    <h3 class="h4 fw-bold mb-1">Modern Fashion</h3>
-                    <p class="small mb-2 opacity-75">120+ Products</p>
-                    <a href="{{ url_for('main.shop_page', category='fashion') }}" class="btn btn-sm btn-light fw-bold px-3">Browse</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="category-card position-relative overflow-hidden rounded-4 shadow-sm group">
-                <img src="https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=600&q=80" alt="Electronics" class="w-100 transition duration-500 group-hover:scale-110" style="height: 250px; object-fit: cover;">
-                <div class="position-absolute bottom-0 start-0 w-100 p-4 text-white" style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
-                    <h3 class="h4 fw-bold mb-1">Latest Gadgets</h3>
-                    <p class="small mb-2 opacity-75">85+ Products</p>
-                    <a href="{{ url_for('main.shop_page', category='electronics') }}" class="btn btn-sm btn-light fw-bold px-3">Browse</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="category-card position-relative overflow-hidden rounded-4 shadow-sm group">
-                <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80" alt="Accessories" class="w-100 transition duration-500 group-hover:scale-110" style="height: 250px; object-fit: cover;">
-                <div class="position-absolute bottom-0 start-0 w-100 p-4 text-white" style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
-                    <h3 class="h4 fw-bold mb-1">Premium Accessories</h3>
-                    <p class="small mb-2 opacity-75">45+ Products</p>
-                    <a href="{{ url_for('main.shop_page', category='accessories') }}" class="btn btn-sm btn-light fw-bold px-3">Browse</a>
                 </div>
             </div>
         </div>
@@ -170,37 +293,6 @@
                     <span class="visually-hidden">Loading products...</span>
                 </div>
                 <p class="mt-2 text-muted">Discovering our best products for you...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Features Section -->
-    <div class="row g-4 py-5 mb-5 text-center border-top">
-        <div class="col-md-4">
-            <div class="p-4 rounded-3 hover-shadow transition">
-                <div class="bg-primary-subtle d-inline-flex p-3 rounded-circle mb-4 text-primary">
-                    <i class="bi bi-truck fs-2"></i>
-                </div>
-                <h3 class="h5 fw-bold">Free Shipping</h3>
-                <p class="text-muted small">On all orders over {{ currency_symbol }}150. Fast delivery across Europe and North America.</p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="p-4 rounded-3 hover-shadow transition">
-                <div class="bg-primary-subtle d-inline-flex p-3 rounded-circle mb-4 text-primary">
-                    <i class="bi bi-shield-check fs-2"></i>
-                </div>
-                <h3 class="h5 fw-bold">Secure Payment</h3>
-                <p class="text-muted small">We use 256-bit SSL encryption to ensure your credit card information is 100% safe.</p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="p-4 rounded-3 hover-shadow transition">
-                <div class="bg-primary-subtle d-inline-flex p-3 rounded-circle mb-4 text-primary">
-                    <i class="bi bi-arrow-repeat fs-2"></i>
-                </div>
-                <h3 class="h5 fw-bold">Easy Returns</h3>
-                <p class="text-muted small">Not satisfied? Return any product within 30 days for a full refund, no questions asked.</p>
             </div>
         </div>
     </div>
