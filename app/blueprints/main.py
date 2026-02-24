@@ -3,6 +3,7 @@ from flask_login import current_user, login_required, logout_user, login_user
 from ..models import User, Product, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
 from ..extensions import db, limiter, cache
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func
 from werkzeug.security import check_password_hash, generate_password_hash
 from ..utils import generate_id, create_directory, send_emailTls2, convert_to_webp, generate_image_icon, ensure_icon_for_url
 import os
@@ -34,17 +35,42 @@ ADMIN_USER = 'admin' # Will be overridden by app config context if needed, but h
 
 @main_bp.route('/')
 def home():
-    return render_template('index.html')
+    categories = Category.query.all()
+    # Fetch all published products with images to avoid N+1 query issues
+    all_published_products = Product.query.filter_by(status='published').options(joinedload(Product.images)).all()
+
+    # Group products by category in memory
+    from collections import defaultdict
+    products_by_category = defaultdict(list)
+    for prod in all_published_products:
+        products_by_category[prod.category].append(prod)
+
+    category_data = []
+    import random
+    for cat in categories:
+        cat_products = products_by_category.get(cat.name, [])
+        if cat_products:
+            # Select 2 random products per category if available
+            selected_products = random.sample(cat_products, min(len(cat_products), 2))
+            category_data.append({
+                'category': cat,
+                'products': selected_products
+            })
+    return render_template('index.html', category_data=category_data)
 
 @main_bp.route('/index')
 def index():
-    return render_template('index.html')
+    return redirect(url_for('main.home'))
 
+@main_bp.route('/product')
 @main_bp.route('/shop')
 @cache.cached(timeout=60, query_string=True)
 def shop_page():
-    # Only published products are visible
-    products = Product.query.filter_by(status='published').all()
+    category = request.args.get('category')
+    query = Product.query.filter_by(status='published')
+    if category:
+        query = query.filter_by(category=category)
+    products = query.all()
     return render_template('shop.html', products=products)
 
 @main_bp.route('/sitemap.xml')

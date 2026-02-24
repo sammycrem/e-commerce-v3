@@ -171,8 +171,16 @@ def create_app(test_config=None):
         if not url: return url
         if '/static/' not in url: return url
         base, _ = os.path.splitext(url)
-        if base.endswith("_icon"): return url
+        if base.endswith("_icon") or base.endswith("_big"): return url
         return base + "_icon.webp"
+
+    @app.template_filter('big_url')
+    def big_url_filter(url):
+        if not url: return url
+        if '/static/' not in url: return url
+        base, _ = os.path.splitext(url)
+        if base.endswith("_icon") or base.endswith("_big"): return url
+        return base + "_big.webp"
 
 
     # Error Handlers
