@@ -13,16 +13,19 @@ window.addEventListener('DOMContentLoaded', async () => {
   const categorySelect = document.getElementById('search-category');
   const searchInput = document.getElementById('search-input');
 
-  // Load Categories
-  if (categorySelect) {
+  // Load Categories (only if not already populated by Jinja2)
+  if (categorySelect && categorySelect.options.length <= 1) {
       try {
           const res = await fetch('/api/categories');
           const categories = await res.json();
           categories.forEach(c => {
-              const opt = document.createElement('option');
-              opt.value = c.name;
-              opt.textContent = c.name;
-              categorySelect.appendChild(opt);
+              // Avoid duplicates if Jinja2 partially populated or something
+              if (![...categorySelect.options].some(opt => opt.value === c.name)) {
+                  const opt = document.createElement('option');
+                  opt.value = c.name;
+                  opt.textContent = c.name;
+                  categorySelect.appendChild(opt);
+              }
           });
       } catch (err) {
           console.error('Failed to load categories', err);
@@ -32,16 +35,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Check URL params for initial state
   const urlParams = new URLSearchParams(window.location.search);
   const initialCategory = urlParams.get('category');
+  const initialQ = urlParams.get('q');
+
   if (initialCategory && categorySelect) {
-      // We might need to wait for categories to load, or set it after.
-      // Since fetch is async, we can set value. If options aren't there yet, it might not select.
-      // Better to set it after fetching.
-      // For simplicity in this structure, we'll rely on the user manually selecting or refactoring if deep linking is critical.
-      // Actually, let's just set it, usually browser handles it if option exists later or we can wait.
-      // Let's modify the loadCategories logic slightly or just proceed.
+      categorySelect.value = initialCategory;
+  }
+  if (initialQ && searchInput) {
+      searchInput.value = initialQ;
   }
 
   async function loadProducts(filters = {}) {
+      if (!grid) return;
       grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
 
       const params = new URLSearchParams({ per_page: 100 });
@@ -55,59 +59,81 @@ window.addEventListener('DOMContentLoaded', async () => {
         renderProducts(products);
       } catch (err) {
         console.error(err);
-        grid.innerHTML = '<p>Could not load products.</p>';
+        grid.innerHTML = '<div class="col-12 text-center py-5"><h3>Error loading products</h3><p>Please try again later.</p></div>';
       }
   }
 
   function renderProducts(products) {
+    if (!grid) return;
     grid.innerHTML = '';
-    if (!products.length) { grid.innerHTML = '<div class="col-12 text-center py-5"><h3>No products found</h3><p class="text-muted">Try adjusting your search criteria.</p></div>'; return; }
+    if (!products.length) {
+        grid.innerHTML = '<div class="col-12 text-center py-5"><h3>No products found</h3><p class="text-muted">Try adjusting your search criteria.</p></div>';
+        return;
+    }
     products.forEach(p => {
-      const card = document.createElement('div');
-      card.className = 'product-card animate__animated animate__fadeInUp';
+      const col = document.createElement('div');
+      col.className = 'col-sm-6 col-md-4 col-lg-3 wide-20 animate__animated animate__fadeIn';
+
       const imageUrl = (p.images && p.images.length) ? getBigUrl(p.images[0].url) : '/static/img/placeholder.webp';
 
-      card.innerHTML = `
-        <div class="product-image-container ratio ratio-1x1 bg-light">
-          <img src="${imageUrl}" class="card-img-top object-fit-cover" alt="${p.name}">
-          <div class="product-overlay">
-            <a href="/product/${p.product_sku}" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm">View Details</a>
-          </div>
-          <div class="position-absolute top-0 start-0 m-3 d-flex flex-column gap-2 wide-auto">
-             ${p.message ? `<span class="badge bg-info text-dark rounded-pill shadow-sm">${p.message}</span>` : ''}
-             ${(p.stock_quantity !== undefined && p.stock_quantity <= 5) ? '<span class="badge bg-danger rounded-pill shadow-sm">Low Stock</span>' : ''}
-          </div>
-        </div>
-        <div class="p-3 d-flex flex-column flex-grow-1 justify-content-between">
-          <div>
-            <h3 class="h5 fw-bold mb-2 text-truncate-2">
-              <a href="/product/${p.product_sku}" class="text-dark text-decoration-none hover-primary">${p.name}</a>
-            </h3>
-          </div>
-          <div class="d-flex justify-content-between align-items-center mt-auto">
-            <span class="h5 fw-bold text-orange mb-0 product-price" data-base-price-cents="${p.base_price_cents}">${window.appConfig.currencySymbol}${(p.base_price_cents/100).toFixed(2)}</span>
-            <a href="/product/${p.product_sku}" class="btn btn-primary btn-sm rounded-circle" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
-              <i class="bi bi-cart-plus"></i>
+      col.innerHTML = `
+        <div class="card h-100 shadow-sm border-0 product-card overflow-hidden" style="border-radius: 0;">
+            <a href="/product/${p.product_sku}" class="product-image-container d-block position-relative">
+                <img src="${imageUrl}" class="card-img-top" alt="${p.name}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                <div class="product-overlay d-flex align-items-center justify-content-center opacity-0 transition">
+                    <span class="btn btn-primary shadow">View Details</span>
+                </div>
+                <div class="position-absolute top-0 start-0 m-3 d-flex flex-column gap-2 wide-auto">
+                    ${p.message ? `<span class="badge bg-info text-dark rounded-pill shadow-sm">${p.message}</span>` : ''}
+                    ${(p.stock_quantity !== undefined && p.stock_quantity <= 5) ? '<span class="badge bg-danger rounded-pill shadow-sm">Low Stock</span>' : ''}
+                </div>
             </a>
-          </div>
+            <div class="card-body">
+                <h5 class="card-title fw-bold mb-2" style="font-size: medium !important;">
+                    <a href="/product/${p.product_sku}" class="text-decoration-none text-dark">${p.name}</a>
+                </h5>
+                <p class="card-text text-muted small mb-3 text-truncate-2">${p.short_description || ''}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="h5 fw-bold text-primary mb-0 product-price" data-base-price-cents="${p.base_price_cents}">${window.appConfig.currencySymbol}${(p.base_price_cents/100).toFixed(2)}</span>
+                    <div class="text-warning">
+                        ${renderStars(p.average_rating || 0)}
+                        <span class="text-muted small ms-1" style="font-size: 0.8rem;">(${p.review_count || 0})</span>
+                    </div>
+                </div>
+            </div>
         </div>
       `;
-      grid.appendChild(card);
+      grid.appendChild(col);
     });
 
     if (window.updateAllPrices) window.updateAllPrices();
   }
 
+  function renderStars(rating) {
+      let stars = '';
+      for (let i = 1; i <= 5; i++) {
+          if (rating >= i) stars += '<i class="bi bi-star-fill small"></i>';
+          else if (rating >= i - 0.5) stars += '<i class="bi bi-star-half small"></i>';
+          else stars += '<i class="bi bi-star small"></i>';
+      }
+      return stars;
+  }
+
   // Initial Load
-  loadProducts();
+  if (grid) {
+      loadProducts({ category: initialCategory, q: initialQ });
+  }
 
   // Search Handler
   if (searchForm) {
       searchForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          const category = categorySelect ? categorySelect.value : '';
-          const q = searchInput ? searchInput.value.trim() : '';
-          loadProducts({ category, q });
+          if (grid) {
+              e.preventDefault();
+              const category = categorySelect ? categorySelect.value : '';
+              const q = searchInput ? searchInput.value.trim() : '';
+              loadProducts({ category, q });
+          }
+          // Natural submit to /shop if no grid
       });
   }
 
@@ -116,7 +142,11 @@ window.addEventListener('DOMContentLoaded', async () => {
       categorySelect.addEventListener('change', () => {
           const category = categorySelect.value;
           const q = searchInput ? searchInput.value.trim() : '';
-          loadProducts({ category, q });
+          if (grid) {
+              loadProducts({ category, q });
+          } else {
+              window.location.href = `/shop?category=${encodeURIComponent(category)}&q=${encodeURIComponent(q)}`;
+          }
       });
   }
 });
