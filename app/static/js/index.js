@@ -152,38 +152,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       return stars;
   }
 
-  // Initial Load
-  if (grid) {
-      const isHomePage = window.location.pathname === '/' || window.location.pathname === '/index';
-      const noFilters = !initialCategory && !initialGroupId && !initialQ;
-
-      if (isHomePage && noFilters) {
-          // Home page default behavior: Performance first, curated SEO content
-          // Try loading featured collection (curated), fallback to all products if empty.
-          loadProducts({ group_id: 'featured-collection', per_page: 8 }).then(count => {
-              const heading = document.querySelector('#featured-products h2');
-              if (count === 0) {
-                  // Fallback to all products (legacy behavior)
-                  loadProducts({ per_page: 8 });
-                  if (heading) heading.textContent = 'Our Collection';
-              } else {
-                  if (heading) heading.textContent = 'Featured Collection';
-              }
-          });
-      } else {
-          // Skip initial AJAX load if products are already server-rendered (prevents double-load flicker)
-          if (grid.querySelector('.product-card')) {
-              return;
-          }
-
-          loadProducts({
-              category: initialCategory,
-              group_id: initialGroupId,
-              q: initialQ
-          });
-      }
-  }
-
   // Search Handler
   if (searchForm) {
       searchForm.addEventListener('submit', (e) => {
@@ -222,5 +190,35 @@ window.addEventListener('DOMContentLoaded', async () => {
           }
           window.location.href = url;
       });
+  }
+
+  // Initial Load
+  if (grid) {
+      const isHomePage = window.location.pathname === '/' || window.location.pathname === '/index';
+      const noFilters = !initialCategory && !initialGroupId && !initialQ;
+
+      if (isHomePage && noFilters) {
+          // Home page default behavior: Performance first, curated SEO content
+          // Try loading featured collection (curated), fallback to all products if empty.
+          loadProducts({ group_id: 'featured-collection', per_page: 8 }).then(count => {
+              const heading = document.querySelector('#featured-products h2');
+              if (count === 0) {
+                  // Fallback to all products (legacy behavior)
+                  loadProducts({ per_page: 8 });
+                  if (heading) heading.textContent = 'Our Collection';
+              } else {
+                  if (heading) heading.textContent = 'Featured Collection';
+              }
+          });
+      } else {
+          // Skip initial AJAX load if products are already server-rendered (prevents double-load flicker)
+          if (!grid.querySelector('.product-card')) {
+              loadProducts({
+                  category: initialCategory,
+                  group_id: initialGroupId,
+                  q: initialQ
+              });
+          }
+      }
   }
 });
