@@ -16,6 +16,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const filenameInput = document.getElementById('gallery-filename-input');
     const confirmUploadBtn = document.getElementById('btn-gallery-upload-confirm');
 
+    // Folder Upload Elements
+    const uploadFolderBtn = document.getElementById('btn-upload-folder-gallery');
+    const folderModalEl = document.getElementById('galleryFolderUploadModal');
+    let folderModal;
+    if (folderModalEl && window.bootstrap) {
+        folderModal = new bootstrap.Modal(folderModalEl);
+    }
+    const folderInput = document.getElementById('gallery-folder-input');
+    const folderOptions = document.getElementById('folder-upload-options');
+    const nameRenameRadio = document.getElementById('nameRename');
+    const prefixContainer = document.getElementById('folder-prefix-container');
+    const prefixInput = document.getElementById('gallery-folder-prefix');
+    const progressContainer = document.getElementById('folder-upload-progress-container');
+    const progressBar = document.getElementById('folder-upload-progress-bar');
+    const progressStats = document.getElementById('folder-upload-stats');
+    const progressStatus = document.getElementById('folder-upload-status');
+    const confirmFolderUploadBtn = document.getElementById('btn-gallery-folder-upload-confirm');
+
     if (!galleryGrid) return; // Only run if element exists
 
     let allPhotos = [];
@@ -243,6 +261,129 @@ document.addEventListener('DOMContentLoaded', () => {
                     filenameInput.value = name;
                 }
             }
+        });
+    }
+
+    // --- Folder Upload Logic ---
+    if (uploadFolderBtn && folderModal) {
+        uploadFolderBtn.addEventListener('click', () => {
+            folderInput.value = '';
+            folderOptions.classList.add('d-none');
+            progressContainer.classList.add('d-none');
+            confirmFolderUploadBtn.disabled = true;
+            confirmFolderUploadBtn.textContent = 'Start Upload';
+            isFolderUploadFinished = false;
+            folderModal.show();
+        });
+    }
+
+    if (folderInput) {
+        folderInput.addEventListener('change', () => {
+            const files = Array.from(folderInput.files).filter(f => f.type.startsWith('image/'));
+            if (files.length > 0) {
+                folderOptions.classList.remove('d-none');
+                confirmFolderUploadBtn.disabled = false;
+                progressStatus.textContent = `${files.length} images selected.`;
+            } else {
+                folderOptions.classList.add('d-none');
+                confirmFolderUploadBtn.disabled = true;
+                progressStatus.textContent = 'No images found in folder.';
+            }
+        });
+    }
+
+    // Toggle prefix container
+    document.querySelectorAll('input[name="folderNamingMode"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (nameRenameRadio.checked) {
+                prefixContainer.classList.remove('d-none');
+            } else {
+                prefixContainer.classList.add('d-none');
+            }
+        });
+    });
+
+    let isFolderUploadFinished = false;
+
+    if (confirmFolderUploadBtn) {
+        confirmFolderUploadBtn.addEventListener('click', async () => {
+            if (isFolderUploadFinished) {
+                folderModal.hide();
+                return;
+            }
+
+            const allFiles = Array.from(folderInput.files).filter(f => f.type.startsWith('image/'));
+            if (allFiles.length === 0) return;
+
+            const namingMode = document.querySelector('input[name="folderNamingMode"]:checked').value;
+            const prefix = prefixInput.value.trim();
+
+            if (namingMode === 'rename' && !prefix) {
+                alert("Please enter a prefix for renaming.");
+                return;
+            }
+
+            confirmFolderUploadBtn.disabled = true;
+            progressContainer.classList.remove('d-none');
+
+            const total = allFiles.length;
+            let successCount = 0;
+            let errorCount = 0;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+            for (let i = 0; i < total; i++) {
+                const file = allFiles[i];
+                let customName = "";
+
+                if (namingMode === 'rename') {
+                    // prefix_01, prefix_02...
+                    const index = (i + 1).toString().padStart(Math.max(2, total.toString().length), '0');
+                    customName = `${prefix}_${index}`;
+                } else {
+                    // Original name without extension
+                    customName = file.name.split('.').slice(0, -1).join('.');
+                }
+
+                progressStatus.textContent = `Uploading ${file.name}...`;
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('custom_name', customName);
+
+                try {
+                    const headers = {};
+                    if (csrfToken) headers['X-CSRFToken'] = csrfToken;
+
+                    const res = await fetch('/api/admin/upload-image', {
+                        method: 'POST',
+                        headers: headers,
+                        body: formData
+                    });
+
+                    if (res.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    errorCount++;
+                }
+
+                // Update Progress
+                const percent = Math.round(((i + 1) / total) * 100);
+                progressBar.style.width = `${percent}%`;
+                progressStats.textContent = `${i + 1}/${total}`;
+            }
+
+            progressStatus.textContent = `Upload complete. ${successCount} success, ${errorCount} failed.`;
+            confirmFolderUploadBtn.textContent = 'Done';
+            confirmFolderUploadBtn.disabled = false;
+            isFolderUploadFinished = true;
+
+            // Reload gallery
+            loadGallery();
         });
     }
 

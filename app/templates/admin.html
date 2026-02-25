@@ -55,6 +55,9 @@
                     <button id="btn-upload-gallery" class="btn btn-sm btn-primary">
                         <i class="fas fa-upload me-1"></i> Upload
                     </button>
+                    <button id="btn-upload-folder-gallery" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-folder-plus me-1"></i> Upload Folder
+                    </button>
                 </div>
             </div>
             <div class="card-body">
@@ -548,6 +551,66 @@
                             <button id="delete-country" class="btn btn-outline-danger ms-auto">Delete Country</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GALLERY FOLDER UPLOAD MODAL -->
+    <div class="modal fade" id="galleryFolderUploadModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Folder of Images</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Select Folder</label>
+                        <input class="form-control" type="file" id="gallery-folder-input" webkitdirectory directory multiple>
+                        <div class="form-text">Choose a folder containing images (JPG, PNG, WEBP, GIF).</div>
+                    </div>
+
+                    <div id="folder-upload-options" class="d-none">
+                        <hr>
+                        <p class="small fw-bold mb-2">Naming Options</p>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="folderNamingMode" id="nameKeep" value="keep" checked>
+                            <label class="form-check-label small" for="nameKeep">
+                                Keep original filenames
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="folderNamingMode" id="nameRename" value="rename">
+                            <label class="form-check-label small" for="nameRename">
+                                Rename dynamically (Prefix + Index)
+                            </label>
+                        </div>
+
+                        <div id="folder-prefix-container" class="mb-3 d-none">
+                            <label class="form-label small fw-bold">Dynamic Prefix</label>
+                            <input class="form-control" type="text" id="gallery-folder-prefix" placeholder="e.g. summer_collection">
+                            <div class="form-text">Files will be named prefix_01.webp, prefix_02.webp, etc.</div>
+                        </div>
+
+                        <div id="folder-upload-progress-container" class="d-none">
+                            <hr>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="small fw-bold">Upload Progress</span>
+                                <span id="folder-upload-stats" class="small text-muted">0/0</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 10px;">
+                                <div id="folder-upload-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div id="folder-upload-status" class="small text-muted overflow-auto" style="max-height: 100px;">
+                                Ready to upload.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="btn-gallery-folder-upload-confirm" disabled>Start Upload</button>
                 </div>
             </div>
         </div>
