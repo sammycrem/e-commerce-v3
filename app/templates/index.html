@@ -12,7 +12,7 @@
     transition: transform .4s ease-in-out !important;
     }
     .carousel-css{
-        background: #e9ecef;
+        background: #ffbce0;
         border-radius: 10px;
     }
     
@@ -46,7 +46,7 @@
 
     /* Carousel Banner Styles */
     .banner-section {
-        background-color: #fff;
+        background-color: unset;
         margin-bottom: 1rem;
         max-width: 80%;
     }
@@ -59,7 +59,7 @@
         height: 100%;
         padding-left: 15%;
         padding-right: 15%;
-        background-color: #ffffff;
+        /*background-color: #ffffff;*/
     }
 
     .side-btn {
@@ -77,8 +77,8 @@
         align-items: center;
         justify-content: center;
         border-radius: 10px;
-        background-color: #e3faff;
-        min-height: 20%;
+        background-color: #ffbce0;
+        min-height: 29%;
     }
 
     .side-btn:hover {
@@ -98,7 +98,7 @@
 
     .carousel-item-custom {
         display: flex;
-        height: 300px;
+        height: 250px;
         width: 100%;
         align-items: center;
     }
@@ -190,11 +190,25 @@
         .banner-image-side {
             height: 200px;
         }
-        .display-5 {
-            font-size: 1.8rem;
+        .display-6 {
+            font-size: 1.6rem;
         }
     }
+
+    .product-card .card-img-top {
+        width: 100%;
+        height: 300px !important;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    .text-truncate-2 {
+        display: none;
+    }
+    .text-warning{
+        display: none;
+    }
 </style>
+
 {% endblock %}
 
 {% block content %}
@@ -220,7 +234,7 @@
                             <!-- If even index, text on left. If odd, text on right (reversed) -->
                             <div class="carousel-item-custom {% if loop.index0 % 2 != 0 %}flex-row-reverse{% endif %}">
                                 <div class="banner-text-side">
-                                    <h2 class="display-5 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
+                                    <h2 class="display-6 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
                                     <a href="{{ url_for('main.shop_page', category=item.category.name) }}" class="btn-shop-now bg-primary">Shop Now</a>
                                 </div>
                                 <div class="banner-image-side">
