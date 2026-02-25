@@ -1,5 +1,5 @@
 from .extensions import db
-from .models import User, Product, Variant, ProductImage, VariantImage, Promotion, Country, ShippingZone, Category, GlobalSetting, AppCurrency
+from .models import User, Product, Variant, ProductImage, VariantImage, Promotion, Country, ShippingZone, Category, GlobalSetting, AppCurrency, ProductGroup
 from .utils import encrypt_password, generate_id, ensure_icon_for_url
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta, timezone
@@ -333,6 +333,19 @@ def setup_database(app):
                     created.append(prod.product_sku)
 
                 db.session.commit()
+
+            if not ProductGroup.query.first():
+                featured = ProductGroup(name='Featured Collection')
+                best_sellers = ProductGroup(name='Best Sellers')
+                db.session.add_all([featured, best_sellers])
+                db.session.commit()
+
+                # Add some products to groups
+                all_prods = Product.query.limit(5).all()
+                featured.products = all_prods[:3]
+                best_sellers.products = all_prods[3:]
+                db.session.commit()
+
         except Exception as exc:
             db.session.rollback()
             logger.error(f"Error during seeding: {exc}")

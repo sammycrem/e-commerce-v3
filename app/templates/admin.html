@@ -31,6 +31,9 @@
             <button class="nav-link {{ 'active' if active_tab == 'categories' else '' }} tab-button" data-tab="categories" id="categories-tab" type="button">Categories</button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'groups' else '' }} tab-button" data-tab="groups" id="groups-tab" type="button">Groups</button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link {{ 'active' if active_tab == 'gallery' else '' }} tab-button" data-tab="gallery" id="gallery-tab" type="button">Gallery</button>
         </li>
         <li class="nav-item" role="presentation">
@@ -492,6 +495,66 @@
         </div>
     </div>
 
+    <!-- GROUPS TAB -->
+    <div id="tab-groups" class="tab-content {{ 'd-none' if active_tab != 'groups' else '' }}">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0">Product Groups</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 border-bottom">
+                            <button id="btn-new-group" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Create New Group
+                            </button>
+                        </div>
+                        <div id="group-list" class="list-group list-group-flush overflow-auto" style="max-height: 600px;">
+                            <!-- Groups will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0" id="group-editor-title">Manage Product Group</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Group Name</label>
+                            <input id="group_name" type="text" placeholder="e.g., Best Sellers" class="form-control">
+                        </div>
+
+                        <div class="mb-4">
+                            <h3 class="h6 mb-3 fw-bold">Products in this Group</h3>
+                            <div class="input-group mb-3">
+                                <input type="text" id="group-add-sku" class="form-control" placeholder="Add Product by SKU">
+                                <button id="btn-group-add-sku" class="btn btn-outline-primary">Add</button>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Select from List</label>
+                                <select id="group-product-select" class="form-select">
+                                    <option value="">-- Choose Product --</option>
+                                    <!-- Products loaded here -->
+                                </select>
+                            </div>
+                            <div id="group-products-container" class="list-group">
+                                <!-- Group products list here -->
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 pt-3 border-top">
+                            <button id="save-group" class="btn btn-primary px-4">Save Group</button>
+                            <button id="delete-group" class="btn btn-outline-danger ms-auto">Delete Group</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- COUNTRIES TAB -->
     <div id="tab-countries" class="tab-content {{ 'd-none' if active_tab != 'countries' else '' }}">
         <div class="row g-4">
@@ -777,6 +840,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="{{ url_for('static', filename='js/admin_promo.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_countries.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_categories.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_groups.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_gallery.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_settings.js') }}" defer></script>
 {% endblock %}

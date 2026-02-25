@@ -4,11 +4,11 @@
 
 from flask import Blueprint, jsonify, request, abort
 from flask_login import login_required, current_user
-from ..models import Product, Variant, ProductImage, VariantImage, Order, OrderItem, Promotion, Country, VatRate, ShippingZone, Category, GlobalSetting, AppCurrency, Message, Address, User, Review
+from ..models import Product, Variant, ProductImage, VariantImage, Order, OrderItem, Promotion, Country, VatRate, ShippingZone, Category, GlobalSetting, AppCurrency, Message, Address, User, Review, ProductGroup
 from ..extensions import db, cache, limiter
 from sqlalchemy.orm import joinedload
 from sqlalchemy import desc, func, case
-from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height
+from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height, serialize_group
 from ..product_service import products_to_csv, parse_products_file, _create_product_internal, _update_product_internal
 from ..seeder import setup_database
 import os
@@ -610,6 +610,99 @@ def admin_modify_category(id):
         c.name = name
         db.session.commit()
         return jsonify({"id": c.id, "name": c.name}), 200
+
+# -------------------------------------------------------------------------
+# Product Group Admin APIs
+# -------------------------------------------------------------------------
+
+@api_bp.route('/admin/product-groups', methods=['GET'])
+@login_required
+def admin_list_product_groups():
+    check_admin()
+    groups = ProductGroup.query.order_by(ProductGroup.name).all()
+    return jsonify([serialize_group(g) for g in groups]), 200
+
+@api_bp.route('/admin/product-groups', methods=['POST'])
+@login_required
+def admin_create_product_group():
+    check_admin()
+    data = request.get_json() or {}
+    name = data.get('name', '').strip()
+    if not name:
+        return jsonify({"error": "Group name is required"}), 400
+    if ProductGroup.query.filter_by(name=name).first():
+        return jsonify({"error": "Group already exists"}), 409
+
+    group = ProductGroup(name=name)
+
+    if 'product_skus' in data:
+        skus = data['product_skus']
+        products = Product.query.filter(Product.product_sku.in_(skus)).all()
+        group.products = products
+
+    db.session.add(group)
+    db.session.commit()
+    return jsonify(serialize_group(group)), 201
+
+@api_bp.route('/admin/product-groups/<int:group_id>', methods=['GET'])
+@login_required
+def admin_get_product_group(group_id):
+    check_admin()
+    group = ProductGroup.query.get_or_404(group_id)
+    return jsonify(serialize_group(group)), 200
+
+@api_bp.route('/admin/product-groups/<int:group_id>', methods=['PUT'])
+@login_required
+def admin_update_product_group(group_id):
+    check_admin()
+    group = ProductGroup.query.get_or_404(group_id)
+    data = request.get_json() or {}
+
+    if 'name' in data:
+        name = data['name'].strip()
+        if not name:
+            return jsonify({"error": "Group name is required"}), 400
+        existing = ProductGroup.query.filter_by(name=name).first()
+        if existing and existing.id != group_id:
+            return jsonify({"error": "Another group with this name already exists"}), 409
+        group.name = name
+
+    if 'product_skus' in data:
+        skus = data['product_skus']
+        products = Product.query.filter(Product.product_sku.in_(skus)).all()
+        group.products = products
+
+    db.session.commit()
+    return jsonify(serialize_group(group)), 200
+
+@api_bp.route('/admin/product-groups/<int:group_id>', methods=['DELETE'])
+@login_required
+def admin_delete_product_group(group_id):
+    check_admin()
+    group = ProductGroup.query.get_or_404(group_id)
+    db.session.delete(group)
+    db.session.commit()
+    return jsonify({"message": "Product group deleted"}), 200
+
+@api_bp.route('/admin/product-groups/<int:group_id>/add-product-sku', methods=['POST'])
+@login_required
+def admin_add_product_to_group_by_sku(group_id):
+    check_admin()
+    group = ProductGroup.query.get_or_404(group_id)
+    data = request.get_json() or {}
+    sku = data.get('sku', '').strip()
+    if not sku:
+        return jsonify({"error": "Product SKU is required"}), 400
+
+    product = Product.query.filter_by(product_sku=sku).first()
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
+
+    if product not in group.products:
+        group.products.append(product)
+        db.session.commit()
+
+    return jsonify(serialize_group(group)), 200
 
 @api_bp.route('/admin/products/export', methods=['GET'])
 @login_required
