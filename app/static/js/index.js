@@ -59,7 +59,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   async function loadProducts(filters = {}) {
       if (!grid) return 0;
-      grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+
+      // Only show spinner if not already present
+      if (!grid.querySelector('.spinner-border')) {
+          grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+      }
 
       const perPage = filters.per_page || 100;
       const params = new URLSearchParams({ per_page: perPage });
@@ -167,6 +171,11 @@ window.addEventListener('DOMContentLoaded', async () => {
               }
           });
       } else {
+          // Skip initial AJAX load if products are already server-rendered (prevents double-load flicker)
+          if (grid.querySelector('.product-card')) {
+              return;
+          }
+
           loadProducts({
               category: initialCategory,
               group_id: initialGroupId,
