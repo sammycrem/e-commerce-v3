@@ -156,18 +156,24 @@ window.addEventListener('DOMContentLoaded', async () => {
           const val = categorySelect.value;
           const q = searchInput ? searchInput.value.trim() : '';
 
-          if (grid) {
-              loadProducts({ category: val, q });
+          // For SEO and consistency, we redirect to the landing page of the category/group
+          // except if we are already on a shop page and just want to filter (though redirection is still fine)
+          // We'll redirect if q is present anyway to show results
+
+          let url = '';
+          if (val.startsWith('group:')) {
+              const groupSlug = val.split(':')[1];
+              url = `/shop/group/${encodeURIComponent(groupSlug)}`;
+          } else if (val) {
+              url = `/shop/category/${encodeURIComponent(val)}`;
           } else {
-              let url = '/shop?';
-              if (val.startsWith('group:')) {
-                  url += `group_id=${encodeURIComponent(val.split(':')[1])}`;
-              } else {
-                  url += `category=${encodeURIComponent(val)}`;
-              }
-              url += `&q=${encodeURIComponent(q)}`;
-              window.location.href = url;
+              url = '/shop';
           }
+
+          if (q) {
+              url += (url.includes('?') ? '&' : '?') + `q=${encodeURIComponent(q)}`;
+          }
+          window.location.href = url;
       });
   }
 });

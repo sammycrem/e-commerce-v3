@@ -37,6 +37,12 @@ def usd_to_cents(usd):
     d = Decimal(str(usd)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return int(d * 100)
 
+def slugify(text):
+    import re
+    text = text.lower()
+    text = re.sub(r'[^a-z0-9]+', '-', text)
+    return text.strip('-')
+
 def create_product_data(product_key, category=None, name=None):
     # New SKU format: T-Shirt_p-1_x5 (example, we'll just append random suffix)
     import random
@@ -114,6 +120,7 @@ def create_product_data(product_key, category=None, name=None):
     return {
         "product_sku": sku,
         "name": name,
+        "slug": slugify(name),
         "category": category,
         "description": description,
         "short_description": f"Short desc for {sku}",
@@ -142,6 +149,7 @@ def insert_product(session, pdata):
     product = Product(
         product_sku=sku,
         name=pdata["name"],
+        slug=pdata.get("slug"),
         description=pdata.get("description"),
         short_description=pdata.get("short_description"),
         product_details=pdata.get("product_details"),
@@ -260,9 +268,9 @@ def setup_database(app):
         # Seed categories logic updated below in the product loop
         if not Category.query.first():
             db.session.add_all([
-                Category(name='Graphic Tees'),
-                Category(name='Accessories'),
-                Category(name='Apparel')
+                Category(name='Graphic Tees', slug='graphic-tees'),
+                Category(name='Accessories', slug='accessories'),
+                Category(name='Apparel', slug='apparel')
             ])
             db.session.commit()
 
@@ -283,6 +291,7 @@ def setup_database(app):
             product = Product(
                 product_sku='SAMPLE-SKU',
                 name='Sample Product',
+                slug='sample-product',
                 description='This is a sample product.',
                 category='Samples',
                 base_price_cents=12345
@@ -314,7 +323,7 @@ def setup_database(app):
 
                 # Ensure category exists
                 if not Category.query.filter_by(name=cat_name).first():
-                    db.session.add(Category(name=cat_name))
+                    db.session.add(Category(name=cat_name, slug=slugify(cat_name)))
                     db.session.commit()
 
                 # Create PRODUCT_COUNT products for EACH category
@@ -335,8 +344,8 @@ def setup_database(app):
                 db.session.commit()
 
             if not ProductGroup.query.first():
-                featured = ProductGroup(name='Featured Collection', is_active=True)
-                best_sellers = ProductGroup(name='Best Sellers', is_active=True)
+                featured = ProductGroup(name='Featured Collection', slug='featured-collection', is_active=True)
+                best_sellers = ProductGroup(name='Best Sellers', slug='best-sellers', is_active=True)
                 db.session.add_all([featured, best_sellers])
                 db.session.commit()
 

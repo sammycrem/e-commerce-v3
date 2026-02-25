@@ -152,6 +152,10 @@
                                 <input id="base_price" type="text" placeholder="e.g. 24.99" class="form-control">
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label small fw-bold">Product SEO Slug</label>
+                                <input id="slug" type="text" placeholder="e.g. stylish-cotton-t-shirt" class="form-control">
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label small fw-bold">Message (Badge)</label>
                                 <input id="message" type="text" placeholder="e.g., New Arrival, Sale" class="form-control">
                             </div>
@@ -188,6 +192,18 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Proposed Products (SKUs, comma separated)</label>
                                 <input id="proposed_products" type="text" placeholder="SKU3, SKU4" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3 p-3 bg-light border rounded">
+                            <p class="small fw-bold mb-1">SEO Metadata</p>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Meta Title</label>
+                                <input id="meta_title" type="text" placeholder="SEO Title" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Meta Description</label>
+                                <textarea id="meta_description" class="form-control" rows="2" placeholder="SEO Description"></textarea>
                             </div>
                         </div>
 
@@ -485,6 +501,18 @@
                             <label class="form-label small fw-bold">Category Name</label>
                             <input id="cat_name" type="text" placeholder="e.g., Electronics" class="form-control">
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">SEO Slug</label>
+                            <input id="cat_slug" type="text" placeholder="e.g., electronics" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Meta Title</label>
+                            <input id="cat_meta_title" type="text" placeholder="Category Meta Title" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Meta Description</label>
+                            <textarea id="cat_meta_description" class="form-control" rows="2" placeholder="Category Meta Description"></textarea>
+                        </div>
                         <div class="d-flex gap-2 pt-3 border-top">
                             <button id="save-category" class="btn btn-primary px-4">Save Category</button>
                             <button id="delete-category" class="btn btn-outline-danger ms-auto">Delete Category</button>
@@ -523,9 +551,13 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3 mb-3">
-                            <div class="col-md-9">
+                            <div class="col-md-6">
                                 <label class="form-label small fw-bold">Group Name</label>
                                 <input id="group_name" type="text" placeholder="e.g., Best Sellers" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">SEO Slug</label>
+                                <input id="group_slug" type="text" placeholder="e.g. best-sellers" class="form-control">
                             </div>
                             <div class="col-md-3 d-flex align-items-end">
                                 <div class="form-check mb-2">
@@ -534,6 +566,17 @@
                                         Is Active
                                     </label>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Meta Title</label>
+                                <input id="group_meta_title" type="text" placeholder="Group Meta Title" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Meta Description</label>
+                                <textarea id="group_meta_description" class="form-control" rows="2" placeholder="Group Meta Description"></textarea>
                             </div>
                         </div>
 

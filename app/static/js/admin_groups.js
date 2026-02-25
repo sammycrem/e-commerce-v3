@@ -24,7 +24,10 @@
     const delBtn = $('#delete-group');
     const newBtn = $('#btn-new-group');
     const groupNameInput = $('#group_name');
+    const groupSlugInput = $('#group_slug');
     const groupActiveInput = $('#group_active');
+    const groupMetaTitleInput = $('#group_meta_title');
+    const groupMetaDescriptionInput = $('#group_meta_description');
     const editorTitle = $('#group-editor-title');
     const groupProductsContainer = $('#group-products-container');
     const productSelect = $('#group-product-select');
@@ -53,7 +56,10 @@
         const res = await fetch(`/api/admin/product-groups/${id}`);
         const group = await res.json();
         groupNameInput.value = group.name;
+        groupSlugInput.value = group.slug || '';
         groupActiveInput.checked = group.is_active;
+        groupMetaTitleInput.value = group.meta_title || '';
+        groupMetaDescriptionInput.value = group.meta_description || '';
         saveBtn.dataset.id = group.id;
         editorTitle.textContent = 'Edit Group: ' + group.name;
         currentGroupProducts = group.products || [];
@@ -134,7 +140,10 @@
 
     newBtn.onclick = () => {
       groupNameInput.value = '';
+      groupSlugInput.value = '';
       groupActiveInput.checked = false;
+      groupMetaTitleInput.value = '';
+      groupMetaDescriptionInput.value = '';
       delete saveBtn.dataset.id;
       editorTitle.textContent = 'Create New Product Group';
       currentGroupProducts = [];
@@ -156,7 +165,10 @@
 
       const body = {
           name,
+          slug: groupSlugInput.value.trim(),
           is_active: groupActiveInput.checked,
+          meta_title: groupMetaTitleInput.value.trim(),
+          meta_description: groupMetaDescriptionInput.value.trim(),
           product_skus: currentGroupProducts.map(p => p.product_sku)
       };
 

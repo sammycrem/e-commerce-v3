@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}{{ sku }} - {{ product.name if product else 'Product' }} | E-Commerce Pro{% endblock %}
+{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else (sku ~ ' - ' ~ (product.name if product else 'Product') ~ ' | E-Commerce Pro') }}{% endblock %}
 
 {% block meta_tags %}
 <meta name="description" content="{{ product.short_description if product and product.short_description else 'Product details' }}">

@@ -1231,7 +1231,10 @@ def serialize_product(product):
     return {
         "product_sku": product.product_sku,
         "name": product.name,
+        "slug": product.slug,
         "description": product.description,
+        "meta_title": product.meta_title,
+        "meta_description": product.meta_description,
         "category": product.category,
         "base_price_cents": product.base_price_cents,
         "short_description": product.short_description,
@@ -1331,10 +1334,22 @@ def process_loyalty_reward(order):
     db.session.commit()
     logger.info(f"Granted loyalty reward {reward_cents} cents to user {order.user_id} for order {order.public_order_id}")
 
+def serialize_category(category):
+    return {
+        "id": category.id,
+        "name": category.name,
+        "slug": category.slug,
+        "meta_title": category.meta_title,
+        "meta_description": category.meta_description
+    }
+
 def serialize_group(group):
     return {
         "id": group.id,
         "name": group.name,
+        "slug": group.slug,
         "is_active": group.is_active,
+        "meta_title": group.meta_title,
+        "meta_description": group.meta_description,
         "products": [serialize_product(p) for p in group.products]
     }

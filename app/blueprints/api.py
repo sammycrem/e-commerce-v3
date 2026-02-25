@@ -8,7 +8,7 @@ from ..models import Product, Variant, ProductImage, VariantImage, Order, OrderI
 from ..extensions import db, cache, limiter
 from sqlalchemy.orm import joinedload
 from sqlalchemy import desc, func, case
-from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height, serialize_group
+from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height, serialize_group, serialize_category
 from ..product_service import products_to_csv, parse_products_file, _create_product_internal, _update_product_internal
 from ..seeder import setup_database
 import os
@@ -578,7 +578,7 @@ def admin_update_order_shipment(public_order_id):
 def admin_list_categories():
     check_admin()
     categories = Category.query.order_by(Category.name).all()
-    return jsonify([{"id": c.id, "name": c.name} for c in categories]), 200
+    return jsonify([serialize_category(c) for c in categories]), 200
 
 @api_bp.route('/admin/categories', methods=['POST'])
 @login_required
@@ -588,10 +588,15 @@ def admin_create_category():
     name = data.get('name', '').strip()
     if not name: return jsonify({"error": "Name required"}), 400
     if Category.query.filter_by(name=name).first(): return jsonify({"error": "Exists"}), 409
-    c = Category(name=name)
+    c = Category(
+        name=name,
+        slug=data.get('slug'),
+        meta_title=data.get('meta_title'),
+        meta_description=data.get('meta_description')
+    )
     db.session.add(c)
     db.session.commit()
-    return jsonify({"id": c.id, "name": c.name}), 201
+    return jsonify(serialize_category(c)), 201
 
 @api_bp.route('/admin/categories/<int:id>', methods=['PUT', 'DELETE'])
 @login_required
@@ -610,9 +615,14 @@ def admin_modify_category(id):
         if not name: return jsonify({"error": "Name required"}), 400
         existing = Category.query.filter_by(name=name).first()
         if existing and existing.id != id: return jsonify({"error": "Exists"}), 409
+
         c.name = name
+        c.slug = data.get('slug', c.slug)
+        c.meta_title = data.get('meta_title', c.meta_title)
+        c.meta_description = data.get('meta_description', c.meta_description)
+
         db.session.commit()
-        return jsonify({"id": c.id, "name": c.name}), 200
+        return jsonify(serialize_category(c)), 200
 
 # -------------------------------------------------------------------------
 # Product Group Admin APIs
@@ -636,8 +646,13 @@ def admin_create_product_group():
     if ProductGroup.query.filter_by(name=name).first():
         return jsonify({"error": "Group already exists"}), 409
 
-    group = ProductGroup(name=name)
-    group.is_active = bool(data.get('is_active', False))
+    group = ProductGroup(
+        name=name,
+        slug=data.get('slug'),
+        is_active=bool(data.get('is_active', False)),
+        meta_title=data.get('meta_title'),
+        meta_description=data.get('meta_description')
+    )
 
     if 'product_skus' in data:
         skus = data['product_skus']
@@ -673,6 +688,15 @@ def admin_update_product_group(group_id):
 
     if 'is_active' in data:
         group.is_active = bool(data['is_active'])
+
+    if 'slug' in data:
+        group.slug = data['slug']
+
+    if 'meta_title' in data:
+        group.meta_title = data['meta_title']
+
+    if 'meta_description' in data:
+        group.meta_description = data['meta_description']
 
     if 'product_skus' in data:
         skus = data['product_skus']
