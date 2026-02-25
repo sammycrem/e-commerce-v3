@@ -344,9 +344,9 @@ def setup_database(app):
                 db.session.commit()
 
                 # Add some products to groups
-                all_prods = Product.query.limit(5).all()
-                featured.products = all_prods[:3]
-                best_sellers.products = all_prods[3:]
+                all_prods = Product.query.filter_by(status='published').limit(12).all()
+                featured.products = all_prods[:8]
+                best_sellers.products = all_prods[4:12]
                 db.session.commit()
 
         except Exception as exc:

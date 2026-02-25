@@ -58,10 +58,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function loadProducts(filters = {}) {
-      if (!grid) return;
+      if (!grid) return 0;
       grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
 
-      const params = new URLSearchParams({ per_page: 100 });
+      const perPage = filters.per_page || 100;
+      const params = new URLSearchParams({ per_page: perPage });
 
       if (filters.category) {
           if (filters.category.startsWith('group:')) {
@@ -83,9 +84,11 @@ window.addEventListener('DOMContentLoaded', async () => {
         const data = await res.json();
         const products = data.products || [];
         renderProducts(products);
+        return products.length;
       } catch (err) {
         console.error(err);
         grid.innerHTML = '<div class="col-12 text-center py-5"><h3>Error loading products</h3><p>Please try again later.</p></div>';
+        return 0;
       }
   }
 
@@ -147,18 +150,29 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Initial Load
   if (grid) {
-      const filters = {
-          category: initialCategory,
-          group_id: initialGroupId,
-          q: initialQ
-      };
+      const isHomePage = window.location.pathname === '/' || window.location.pathname === '/index';
+      const noFilters = !initialCategory && !initialGroupId && !initialQ;
 
-      // If we are on home page and no filters are set, load the Featured Collection group by default
-      if (window.location.pathname === '/' && !initialCategory && !initialGroupId && !initialQ) {
-          filters.group_id = 'featured-collection';
+      if (isHomePage && noFilters) {
+          // Home page default behavior: Performance first, curated SEO content
+          // Try loading featured collection (curated), fallback to all products if empty.
+          loadProducts({ group_id: 'featured-collection', per_page: 8 }).then(count => {
+              const heading = document.querySelector('#featured-products h2');
+              if (count === 0) {
+                  // Fallback to all products (legacy behavior)
+                  loadProducts({ per_page: 8 });
+                  if (heading) heading.textContent = 'Our Collection';
+              } else {
+                  if (heading) heading.textContent = 'Featured Collection';
+              }
+          });
+      } else {
+          loadProducts({
+              category: initialCategory,
+              group_id: initialGroupId,
+              q: initialQ
+          });
       }
-
-      loadProducts(filters);
   }
 
   // Search Handler

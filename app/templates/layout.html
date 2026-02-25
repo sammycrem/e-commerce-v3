@@ -18,7 +18,7 @@
     {% endblock %}
 
     {% block canonical_url %}
-    <link rel="canonical" href="{{ request.url }}">
+    <link rel="canonical" href="{{ request.base_url }}">
     {% endblock %}
 
     <title>{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else 'My Shop' }}{% endblock %}</title>

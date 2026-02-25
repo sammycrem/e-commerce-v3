@@ -49,11 +49,14 @@ def list_products():
     # Public API: only published products
     query = query.filter_by(status='published')
 
-    if not group_id and group_slug:
-        g = ProductGroup.query.filter_by(slug=group_slug, is_active=True).first()
-        if g: group_id = g.id
+    if group_id or group_slug:
+        if not group_id:
+            g = ProductGroup.query.filter_by(slug=group_slug, is_active=True).first()
+            if g: group_id = g.id
+            else:
+                # Group requested but not found/active
+                return jsonify({"products": [], "total": 0, "page": page, "pages": 0}), 200
 
-    if group_id:
         query = query.join(Product.groups).filter(ProductGroup.id == group_id)
     elif category:
         # Try to resolve category slug to name
