@@ -9,6 +9,7 @@ def test_create_product_group(authenticated_client, app):
     })
     assert res.status_code == 201
     assert res.json['name'] == 'New Group'
+    assert res.json['slug'] == 'new-group'
 
     with app.app_context():
         group = ProductGroup.query.filter_by(name='New Group').first()

@@ -715,6 +715,13 @@ def translate(word, language, name):
    return 'Welcome to ' + name
 # ---------end------------
 
+def slugify(text):
+    import re
+    text = text.lower()
+    text = re.sub(r'[^a-z0-9]+', '-', text)
+    return text.strip('-')
+# ---------end------------
+
 def get_folders_in_directory(directory_path):
     """
     Creates a list of all folders (directories) directly under the given directory.

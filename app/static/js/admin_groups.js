@@ -81,6 +81,13 @@
         });
     }
 
+    function getIconUrl(url) {
+        if (!url) return '/static/img/placeholder.webp';
+        const parts = url.split('.');
+        const ext = parts.pop();
+        return parts.join('.') + '_icon.webp';
+    }
+
     function renderGroupProducts() {
         groupProductsContainer.innerHTML = '';
         if (currentGroupProducts.length === 0) {
@@ -88,8 +95,15 @@
             return;
         }
         currentGroupProducts.forEach(p => {
+            const imgUrl = (p.images && p.images.length) ? getIconUrl(p.images[0].url) : '/static/img/placeholder.webp';
             const item = el('div', { class: 'list-group-item d-flex justify-content-between align-items-center' },
-                el('span', {}, p.name + ' (' + p.product_sku + ')'),
+                el('div', { class: 'd-flex align-items-center' },
+                    el('img', { src: imgUrl, class: 'me-3 rounded', style: 'width: 40px; height: 40px; object-fit: cover;' }),
+                    el('div', {},
+                        el('div', { class: 'fw-bold' }, p.name),
+                        el('div', { class: 'small text-muted' }, p.product_sku)
+                    )
+                ),
                 el('button', { class: 'btn btn-sm btn-outline-danger', type: 'button' }, 'Remove')
             );
             item.querySelector('button').onclick = () => {
@@ -100,7 +114,7 @@
         });
     }
 
-    productSelect.onchange = () => {
+    productSelect.onchange = async () => {
         const sku = productSelect.value;
         if (!sku) return;
         if (currentGroupProducts.some(p => p.product_sku === sku)) {
@@ -108,12 +122,13 @@
              return;
         }
 
-        // Find product details from select option text
-        const option = productSelect.options[productSelect.selectedIndex];
-        const name = option.text.split(' (')[0];
-
-        currentGroupProducts.push({ product_sku: sku, name: name });
-        renderGroupProducts();
+        // Fetch full product details to get images
+        const res = await fetch(`/api/admin/products/${sku}`);
+        if (res.ok) {
+            const p = await res.json();
+            currentGroupProducts.push(p);
+            renderGroupProducts();
+        }
         productSelect.value = '';
     };
 
@@ -126,11 +141,11 @@
             return;
         }
 
-        // Fetch product to verify and get name
+        // Fetch product to verify and get details
         const res = await fetch(`/api/admin/products/${sku}`);
         if (res.ok) {
             const p = await res.json();
-            currentGroupProducts.push({ product_sku: p.product_sku, name: p.name });
+            currentGroupProducts.push(p);
             renderGroupProducts();
             addSkuInput.value = '';
         } else {

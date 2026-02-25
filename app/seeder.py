@@ -1,6 +1,6 @@
 from .extensions import db
 from .models import User, Product, Variant, ProductImage, VariantImage, Promotion, Country, ShippingZone, Category, GlobalSetting, AppCurrency, ProductGroup
-from .utils import encrypt_password, generate_id, ensure_icon_for_url
+from .utils import encrypt_password, generate_id, ensure_icon_for_url, slugify
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -36,12 +36,6 @@ BASE_PRICES_USD = {
 def usd_to_cents(usd):
     d = Decimal(str(usd)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return int(d * 100)
-
-def slugify(text):
-    import re
-    text = text.lower()
-    text = re.sub(r'[^a-z0-9]+', '-', text)
-    return text.strip('-')
 
 def create_product_data(product_key, category=None, name=None):
     # New SKU format: T-Shirt_p-1_x5 (example, we'll just append random suffix)

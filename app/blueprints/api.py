@@ -8,7 +8,7 @@ from ..models import Product, Variant, ProductImage, VariantImage, Order, OrderI
 from ..extensions import db, cache, limiter
 from sqlalchemy.orm import joinedload
 from sqlalchemy import desc, func, case
-from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height, serialize_group, serialize_category
+from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height, serialize_group, serialize_category, slugify
 from ..product_service import products_to_csv, parse_products_file, _create_product_internal, _update_product_internal
 from ..seeder import setup_database
 import os
@@ -646,9 +646,10 @@ def admin_create_product_group():
     if ProductGroup.query.filter_by(name=name).first():
         return jsonify({"error": "Group already exists"}), 409
 
+    slug = data.get('slug') or slugify(name)
     group = ProductGroup(
         name=name,
-        slug=data.get('slug'),
+        slug=slug,
         is_active=bool(data.get('is_active', False)),
         meta_title=data.get('meta_title'),
         meta_description=data.get('meta_description')
@@ -690,7 +691,7 @@ def admin_update_product_group(group_id):
         group.is_active = bool(data['is_active'])
 
     if 'slug' in data:
-        group.slug = data['slug']
+        group.slug = data['slug'] or slugify(group.name)
 
     if 'meta_title' in data:
         group.meta_title = data['meta_title']

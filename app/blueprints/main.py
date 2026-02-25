@@ -106,8 +106,19 @@ def shop_page(slug=None):
             query = query.join(Product.groups).filter(ProductGroup.id == group_id)
             seo_metadata['heading'] = group.name
     elif category_name:
-        query = query.filter_by(category=category_name)
-        seo_metadata['heading'] = category_name
+        if category_name.startswith('group:'):
+            from ..models import ProductGroup
+            group_slug = category_name.split(':', 1)[1]
+            group = ProductGroup.query.filter_by(slug=group_slug, is_active=True).first()
+            if group:
+                query = query.join(Product.groups).filter(ProductGroup.id == group.id)
+                seo_metadata['heading'] = group.name
+            else:
+                query = query.filter_by(category=category_name) # Fallback
+                seo_metadata['heading'] = category_name
+        else:
+            query = query.filter_by(category=category_name)
+            seo_metadata['heading'] = category_name
 
     if q:
         query = query.filter(Product.name.ilike(f"%{q}%"))
