@@ -35,10 +35,15 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Check URL params for initial state
   const urlParams = new URLSearchParams(window.location.search);
   const initialCategory = urlParams.get('category');
+  const initialGroupId = urlParams.get('group_id');
   const initialQ = urlParams.get('q');
 
-  if (initialCategory && categorySelect) {
-      categorySelect.value = initialCategory;
+  if (categorySelect) {
+      if (initialGroupId) {
+          categorySelect.value = `group:${initialGroupId}`;
+      } else if (initialCategory) {
+          categorySelect.value = initialCategory;
+      }
   }
   if (initialQ && searchInput) {
       searchInput.value = initialQ;
@@ -49,7 +54,15 @@ window.addEventListener('DOMContentLoaded', async () => {
       grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
 
       const params = new URLSearchParams({ per_page: 100 });
-      if (filters.category) params.append('category', filters.category);
+
+      if (filters.category) {
+          if (filters.category.startsWith('group:')) {
+              params.append('group_id', filters.category.split(':')[1]);
+          } else {
+              params.append('category', filters.category);
+          }
+      }
+
       if (filters.q) params.append('q', filters.q);
 
       try {
@@ -140,12 +153,20 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Auto-filter on category select
   if (categorySelect) {
       categorySelect.addEventListener('change', () => {
-          const category = categorySelect.value;
+          const val = categorySelect.value;
           const q = searchInput ? searchInput.value.trim() : '';
+
           if (grid) {
-              loadProducts({ category, q });
+              loadProducts({ category: val, q });
           } else {
-              window.location.href = `/shop?category=${encodeURIComponent(category)}&q=${encodeURIComponent(q)}`;
+              let url = '/shop?';
+              if (val.startsWith('group:')) {
+                  url += `group_id=${encodeURIComponent(val.split(':')[1])}`;
+              } else {
+                  url += `category=${encodeURIComponent(val)}`;
+              }
+              url += `&q=${encodeURIComponent(q)}`;
+              window.location.href = url;
           }
       });
   }

@@ -42,12 +42,15 @@ def list_products():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     category = request.args.get('category', type=str)
+    group_id = request.args.get('group_id', type=int)
 
     query = Product.query.options(joinedload(Product.images), joinedload(Product.variants))
     # Public API: only published products
     query = query.filter_by(status='published')
 
-    if category:
+    if group_id:
+        query = query.join(Product.groups).filter(ProductGroup.id == group_id)
+    elif category:
         query = query.filter_by(category=category)
 
     q = request.args.get('q', type=str)
@@ -634,6 +637,7 @@ def admin_create_product_group():
         return jsonify({"error": "Group already exists"}), 409
 
     group = ProductGroup(name=name)
+    group.is_active = bool(data.get('is_active', False))
 
     if 'product_skus' in data:
         skus = data['product_skus']
@@ -666,6 +670,9 @@ def admin_update_product_group(group_id):
         if existing and existing.id != group_id:
             return jsonify({"error": "Another group with this name already exists"}), 409
         group.name = name
+
+    if 'is_active' in data:
+        group.is_active = bool(data['is_active'])
 
     if 'product_skus' in data:
         skus = data['product_skus']

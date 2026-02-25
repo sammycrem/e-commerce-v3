@@ -335,8 +335,8 @@ def setup_database(app):
                 db.session.commit()
 
             if not ProductGroup.query.first():
-                featured = ProductGroup(name='Featured Collection')
-                best_sellers = ProductGroup(name='Best Sellers')
+                featured = ProductGroup(name='Featured Collection', is_active=True)
+                best_sellers = ProductGroup(name='Best Sellers', is_active=True)
                 db.session.add_all([featured, best_sellers])
                 db.session.commit()
 

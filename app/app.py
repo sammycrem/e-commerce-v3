@@ -23,7 +23,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 # Extensions
 from .extensions import db, login_manager, mail, limiter, cache, csrf
-from .models import User, Product, Variant, ProductImage, VariantImage, Order, OrderItem, Promotion, Country, VatRate, ShippingZone, Category, GlobalSetting, AppCurrency, Address, Message
+from .models import User, Product, Variant, ProductImage, VariantImage, Order, OrderItem, Promotion, Country, VatRate, ShippingZone, Category, GlobalSetting, AppCurrency, Address, Message, ProductGroup
 
 # Blueprints
 from .blueprints.cart import cart_bp
@@ -132,6 +132,7 @@ def create_app(test_config=None):
         global_promo_message = ''
         global_promo_enabled = False
         categories = []
+        active_groups = []
 
         try:
             currency = GlobalSetting.query.filter_by(key='currency').first()
@@ -155,6 +156,7 @@ def create_app(test_config=None):
                 global_promo_enabled = str_to_bool(promo_enabled_setting.value)
 
             categories = Category.query.order_by(Category.name).all()
+            active_groups = ProductGroup.query.filter_by(is_active=True).order_by(ProductGroup.name).all()
         except Exception:
             # Handle case where tables are not created yet (OperationalError)
             pass
@@ -167,7 +169,8 @@ def create_app(test_config=None):
             'admin_user': app.config.get('APP_ADMIN_USER'),
             'global_promo_message': global_promo_message,
             'global_promo_enabled': global_promo_enabled,
-            'categories': categories
+            'categories': categories,
+            'active_groups': active_groups
         }
 
     @app.template_filter('icon_url')

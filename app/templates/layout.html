@@ -50,10 +50,19 @@
                     <form id="product-search-form" class="d-flex ms-lg-4 me-auto my-2 my-lg-0 w-100" style="max-width: 600px;" action="/shop" method="GET">
                         <div class="input-group">
                             <select class="form-select border-0 bg-light fw-bold" name="category" id="search-category" style="max-width: 150px;">
-                                <option value="">All Categories</option>
-                                {% for cat in categories %}
-                                <option value="{{ cat.name }}" {% if request.args.get('category') == cat.name %}selected{% endif %}>{{ cat.name }}</option>
-                                {% endfor %}
+                                <option value="">All Products</option>
+                                <optgroup label="Categories">
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.name }}" {% if request.args.get('category') == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% if active_groups %}
+                                <optgroup label="Featured Groups">
+                                    {% for group in active_groups %}
+                                    <option value="group:{{ group.id }}" {% if request.args.get('group_id') == group.id|string %}selected{% endif %}>{{ group.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endif %}
                             </select>
                             <input type="text" class="form-control border-0" name="q" id="search-input" placeholder="Search products..." aria-label="Search" value="{{ request.args.get('q', '') }}">
                             <button class="btn btn-light" type="submit">

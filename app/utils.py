@@ -1335,5 +1335,6 @@ def serialize_group(group):
     return {
         "id": group.id,
         "name": group.name,
+        "is_active": group.is_active,
         "products": [serialize_product(p) for p in group.products]
     }

@@ -179,6 +179,7 @@ class ProductGroup(db.Model):
     __tablename__ = 'product_groups'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
+    is_active = db.Column(db.Boolean, default=False)
     products = db.relationship('Product', secondary=product_group_association, backref=db.backref('groups', lazy='dynamic'))
 
 class Category(db.Model):

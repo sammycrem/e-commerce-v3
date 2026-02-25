@@ -67,10 +67,16 @@ def index():
 @cache.cached(timeout=60, query_string=True)
 def shop_page():
     category = request.args.get('category')
+    group_id = request.args.get('group_id', type=int)
     q = request.args.get('q')
     query = Product.query.filter_by(status='published')
-    if category:
+
+    if group_id:
+        from ..models import ProductGroup
+        query = query.join(Product.groups).filter(ProductGroup.id == group_id)
+    elif category:
         query = query.filter_by(category=category)
+
     if q:
         query = query.filter(Product.name.ilike(f"%{q}%"))
     products = query.all()

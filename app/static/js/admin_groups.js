@@ -24,6 +24,7 @@
     const delBtn = $('#delete-group');
     const newBtn = $('#btn-new-group');
     const groupNameInput = $('#group_name');
+    const groupActiveInput = $('#group_active');
     const editorTitle = $('#group-editor-title');
     const groupProductsContainer = $('#group-products-container');
     const productSelect = $('#group-product-select');
@@ -52,6 +53,7 @@
         const res = await fetch(`/api/admin/product-groups/${id}`);
         const group = await res.json();
         groupNameInput.value = group.name;
+        groupActiveInput.checked = group.is_active;
         saveBtn.dataset.id = group.id;
         editorTitle.textContent = 'Edit Group: ' + group.name;
         currentGroupProducts = group.products || [];
@@ -132,6 +134,7 @@
 
     newBtn.onclick = () => {
       groupNameInput.value = '';
+      groupActiveInput.checked = false;
       delete saveBtn.dataset.id;
       editorTitle.textContent = 'Create New Product Group';
       currentGroupProducts = [];
@@ -151,9 +154,11 @@
       const csrfToken = document.querySelector('meta[name="csrf-token"]');
       if (csrfToken) headers['X-CSRFToken'] = csrfToken.content;
 
-      const body = { name };
-      // Include products in the request
-      body.product_skus = currentGroupProducts.map(p => p.product_sku);
+      const body = {
+          name,
+          is_active: groupActiveInput.checked,
+          product_skus: currentGroupProducts.map(p => p.product_sku)
+      };
 
       const res = await fetch(url, {
         method,
