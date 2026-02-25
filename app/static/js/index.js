@@ -19,10 +19,11 @@ window.addEventListener('DOMContentLoaded', async () => {
           const res = await fetch('/api/categories');
           const categories = await res.json();
           categories.forEach(c => {
+              const val = c.slug || c.name;
               // Avoid duplicates if Jinja2 partially populated or something
-              if (![...categorySelect.options].some(opt => opt.value === c.name)) {
+              if (![...categorySelect.options].some(opt => opt.value === val)) {
                   const opt = document.createElement('option');
-                  opt.value = c.name;
+                  opt.value = val;
                   opt.textContent = c.name;
                   categorySelect.appendChild(opt);
               }
@@ -32,11 +33,18 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
   }
 
-  // Check URL params for initial state
+  // Check URL params and path for initial state
   const urlParams = new URLSearchParams(window.location.search);
-  const initialCategory = urlParams.get('category');
-  const initialGroupId = urlParams.get('group_id');
+  let initialCategory = urlParams.get('category');
+  let initialGroupId = urlParams.get('group_id');
   const initialQ = urlParams.get('q');
+
+  const path = window.location.pathname;
+  if (path.includes('/shop/category/')) {
+      initialCategory = decodeURIComponent(path.split('/shop/category/')[1]);
+  } else if (path.includes('/shop/group/')) {
+      initialGroupId = decodeURIComponent(path.split('/shop/group/')[1]);
+  }
 
   if (categorySelect) {
       if (initialGroupId) {
@@ -57,10 +65,15 @@ window.addEventListener('DOMContentLoaded', async () => {
 
       if (filters.category) {
           if (filters.category.startsWith('group:')) {
-              params.append('group_id', filters.category.split(':')[1]);
+              const val = filters.category.split(':')[1];
+              if (isNaN(val)) params.append('group_slug', val);
+              else params.append('group_id', val);
           } else {
               params.append('category', filters.category);
           }
+      } else if (filters.group_id) {
+          if (isNaN(filters.group_id)) params.append('group_slug', filters.group_id);
+          else params.append('group_id', filters.group_id);
       }
 
       if (filters.q) params.append('q', filters.q);
@@ -134,7 +147,18 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Initial Load
   if (grid) {
-      loadProducts({ category: initialCategory, q: initialQ });
+      const filters = {
+          category: initialCategory,
+          group_id: initialGroupId,
+          q: initialQ
+      };
+
+      // If we are on home page and no filters are set, load the Featured Collection group by default
+      if (window.location.pathname === '/' && !initialCategory && !initialGroupId && !initialQ) {
+          filters.group_id = 'featured-collection';
+      }
+
+      loadProducts(filters);
   }
 
   // Search Handler

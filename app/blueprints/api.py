@@ -43,15 +43,23 @@ def list_products():
     per_page = request.args.get('per_page', 10, type=int)
     category = request.args.get('category', type=str)
     group_id = request.args.get('group_id', type=int)
+    group_slug = request.args.get('group_slug', type=str)
 
     query = Product.query.options(joinedload(Product.images), joinedload(Product.variants))
     # Public API: only published products
     query = query.filter_by(status='published')
 
+    if not group_id and group_slug:
+        g = ProductGroup.query.filter_by(slug=group_slug, is_active=True).first()
+        if g: group_id = g.id
+
     if group_id:
         query = query.join(Product.groups).filter(ProductGroup.id == group_id)
     elif category:
-        query = query.filter_by(category=category)
+        # Try to resolve category slug to name
+        c = Category.query.filter_by(slug=category).first()
+        cat_name = c.name if c else category
+        query = query.filter_by(category=cat_name)
 
     q = request.args.get('q', type=str)
     if q:
@@ -178,7 +186,7 @@ def get_product_reviews(sku):
 @cache.cached(timeout=3600)
 def get_public_categories():
     categories = Category.query.order_by(Category.name).all()
-    return jsonify([{"id": c.id, "name": c.name} for c in categories]), 200
+    return jsonify([{"id": c.id, "name": c.name, "slug": c.slug} for c in categories]), 200
 
 @api_bp.route('/countries/public', methods=['GET'])
 @cache.cached(timeout=3600)

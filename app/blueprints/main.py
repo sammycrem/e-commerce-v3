@@ -117,8 +117,11 @@ def shop_page(slug=None):
                 query = query.filter_by(category=category_name) # Fallback
                 seo_metadata['heading'] = category_name
         else:
-            query = query.filter_by(category=category_name)
-            seo_metadata['heading'] = category_name
+            # Try to resolve category slug to name
+            c = Category.query.filter_by(slug=category_name).first()
+            cat_actual_name = c.name if c else category_name
+            query = query.filter_by(category=cat_actual_name)
+            seo_metadata['heading'] = cat_actual_name
 
     if q:
         query = query.filter(Product.name.ilike(f"%{q}%"))
