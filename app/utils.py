@@ -1234,8 +1234,8 @@ def serialize_review(review):
         "created_at": review.created_at.isoformat()
     }
 
-def serialize_product(product):
-    return {
+def serialize_product(product, include_reviews=True):
+    data = {
         "product_sku": product.product_sku,
         "name": product.name,
         "slug": product.slug,
@@ -1259,9 +1259,11 @@ def serialize_product(product):
         "average_rating": product.average_rating,
         "review_count": product.review_count,
         "images": [serialize_image(img) for img in product.images],
-        "variants": [serialize_variant(var) for var in product.variants],
-        "reviews": [serialize_review(r) for r in product.reviews]
+        "variants": [serialize_variant(var) for var in product.variants]
     }
+    if include_reviews:
+        data["reviews"] = [serialize_review(r) for r in product.reviews]
+    return data
 
 def serialize_promotion(promo):
     return {
@@ -1358,5 +1360,5 @@ def serialize_group(group):
         "is_active": group.is_active,
         "meta_title": group.meta_title,
         "meta_description": group.meta_description,
-        "products": [serialize_product(p) for p in group.products]
+        "products": [serialize_product(p, include_reviews=False) for p in group.products]
     }

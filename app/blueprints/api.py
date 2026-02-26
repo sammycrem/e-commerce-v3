@@ -45,7 +45,11 @@ def list_products():
     group_id = request.args.get('group_id', type=int)
     group_slug = request.args.get('group_slug', type=str)
 
-    query = Product.query.options(joinedload(Product.images), joinedload(Product.variants))
+    query = Product.query.options(
+        joinedload(Product.images),
+        joinedload(Product.reviews),
+        joinedload(Product.variants).joinedload(Variant.images)
+    )
     # Public API: only published products
     query = query.filter_by(status='published')
 
@@ -70,7 +74,7 @@ def list_products():
 
     paginated = query.order_by(Product.name).paginate(page=page, per_page=per_page, error_out=False)
     return jsonify({
-        "products": [serialize_product(p) for p in paginated.items],
+        "products": [serialize_product(p, include_reviews=False) for p in paginated.items],
         "total": paginated.total,
         "page": paginated.page,
         "pages": paginated.pages
@@ -95,7 +99,7 @@ def get_products_batch():
         joinedload(Product.images),
         joinedload(Product.variants)
     ).filter(Product.product_sku.in_(skus)).all()
-    product_map = {p.product_sku: serialize_product(p) for p in products}
+    product_map = {p.product_sku: serialize_product(p, include_reviews=False) for p in products}
     result = [product_map[sku] for sku in skus if sku in product_map]
     return jsonify(result), 200
 
@@ -260,19 +264,27 @@ def admin_create_product():
 def admin_list_products():
     check_admin()
     status_filter = request.args.get('status')
-    query = Product.query.options(joinedload(Product.images), joinedload(Product.variants)).order_by(Product.name)
+    query = Product.query.options(
+        joinedload(Product.images),
+        joinedload(Product.reviews),
+        joinedload(Product.variants).joinedload(Variant.images)
+    ).order_by(Product.name)
 
     if status_filter and status_filter != 'all':
         query = query.filter_by(status=status_filter)
 
     products = query.all()
-    return jsonify([serialize_product(p) for p in products]), 200
+    return jsonify([serialize_product(p, include_reviews=False) for p in products]), 200
 
 @api_bp.route('/admin/products/<string:sku>', methods=['GET'])
 @login_required
 def admin_get_product(sku):
     check_admin()
-    product = Product.query.options(joinedload(Product.images), joinedload(Product.variants).joinedload(Variant.images)).filter_by(product_sku=sku).first_or_404()
+    product = Product.query.options(
+        joinedload(Product.images),
+        joinedload(Product.reviews),
+        joinedload(Product.variants).joinedload(Variant.images)
+    ).filter_by(product_sku=sku).first_or_404()
     return jsonify(serialize_product(product)), 200
 
 @api_bp.route('/admin/products/<string:sku>', methods=['PUT'])
@@ -430,8 +442,22 @@ def admin_list_orders():
 
     paginated = query.paginate(page=page, per_page=per_page, error_out=False)
 
+    # Bulk fetch unread message counts for the current page
+    order_ids = [o.id for o in paginated.items]
+    unread_counts_map = {}
+    if order_ids:
+        unread_counts = db.session.query(
+            Message.order_id,
+            func.count(Message.id).label('count')
+        ).filter(
+            Message.order_id.in_(order_ids),
+            Message.sender_type == 'USER',
+            Message.is_read == False
+        ).group_by(Message.order_id).all()
+        unread_counts_map = {r.order_id: r.count for r in unread_counts}
+
     def serialize_order_summary(o):
-        unread_count = Message.query.filter_by(order_id=o.id, sender_type='USER', is_read=False).count()
+        unread_count = unread_counts_map.get(o.id, 0)
         return {
             "id": o.id,
             "public_order_id": o.public_order_id,

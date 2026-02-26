@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, abort, send_from_directory, request, jsonify, redirect, url_for, session, current_app, flash
 from collections import defaultdict
 from flask_login import current_user, login_required, logout_user, login_user
-from ..models import User, Product, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
+from ..models import User, Product, Variant, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
 from ..extensions import db, limiter, cache
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func
@@ -37,9 +37,13 @@ ADMIN_USER = 'admin' # Will be overridden by app config context if needed, but h
 @main_bp.route('/')
 def home():
     categories = Category.query.order_by(Category.name).all()
-    # Fetch all published products with images to avoid N+1 query issues
+    # Fetch all published products with images and variants to avoid N+1 query issues
     # Order by ID desc to show latest products
-    all_published_products = Product.query.filter_by(status='published').options(joinedload(Product.images)).order_by(Product.id.desc()).all()
+    all_published_products = Product.query.filter_by(status='published').options(
+        joinedload(Product.images),
+        joinedload(Product.reviews),
+        joinedload(Product.variants).joinedload(Variant.images)
+    ).order_by(Product.id.desc()).all()
 
     # Group products by category in memory
     products_by_category = defaultdict(list)
