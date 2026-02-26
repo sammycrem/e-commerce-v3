@@ -18,7 +18,7 @@ logger.addHandler(file_handler)
 # Constants
 RECREATE_IF_EXISTS = False
 BASE_IMAGE_URL = "/static/ec/products/img"
-PRODUCT_COUNT = 4
+PRODUCT_COUNT = 5
 COLORS = [
     {"name": "White", "code": "white", "prefix": "a", "price_modifier_pct": 0.0},
     {"name": "Red",   "code": "red",   "prefix": "b", "price_modifier_pct": 0.20},
@@ -325,7 +325,7 @@ def setup_database(app):
                     # Cycle through base keys p-1..p-4
                     base_key = base_keys[(i-1) % len(base_keys)]
 
-                    name = f"T-Shirt {base_key.upper()} - {cat_name}"
+                    name = f"T-Shirt {base_key.upper()} - {cat_name} #{i}"
 
                     if Product.query.filter_by(name=name).first():
                         continue

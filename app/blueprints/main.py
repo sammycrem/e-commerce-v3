@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, abort, send_from_directory, request, jsonify, redirect, url_for, session, current_app, flash
+from collections import defaultdict
 from flask_login import current_user, login_required, logout_user, login_user
 from ..models import User, Product, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
 from ..extensions import db, limiter, cache
@@ -35,40 +36,26 @@ ADMIN_USER = 'admin' # Will be overridden by app config context if needed, but h
 
 @main_bp.route('/')
 def home():
-    categories = Category.query.all()
+    categories = Category.query.order_by(Category.name).all()
     # Fetch all published products with images to avoid N+1 query issues
-    all_published_products = Product.query.filter_by(status='published').options(joinedload(Product.images)).all()
+    # Order by ID desc to show latest products
+    all_published_products = Product.query.filter_by(status='published').options(joinedload(Product.images)).order_by(Product.id.desc()).all()
 
     # Group products by category in memory
-    from collections import defaultdict
     products_by_category = defaultdict(list)
     for prod in all_published_products:
         products_by_category[prod.category].append(prod)
 
     category_data = []
-    import random
     for cat in categories:
         cat_products = products_by_category.get(cat.name, [])
         if cat_products:
-            # Select 2 random products per category if available
-            selected_products = random.sample(cat_products, min(len(cat_products), 2))
+            # Select up to 5 latest products per category
+            selected_products = cat_products[:5]
             category_data.append({
                 'category': cat,
                 'products': selected_products
             })
-    # Fetch featured products for the main grid
-    from ..models import ProductGroup
-    featured_group = ProductGroup.query.filter_by(slug='featured-collection', is_active=True).first()
-    featured_products = []
-    heading = 'Our Collection'
-    if featured_group:
-        featured_products = featured_group.products[:8]
-        heading = 'Featured Collection'
-
-    # Fallback to general products if no featured group or empty
-    if not featured_products:
-        featured_products = [p for p in all_published_products[:8]]
-        heading = 'Our Collection'
 
     seo_metadata = {
         'title': 'E-Commerce Pro - High Quality Products',
@@ -76,8 +63,6 @@ def home():
     }
     return render_template('index.html',
                            category_data=category_data,
-                           featured_products=featured_products,
-                           heading=heading,
                            seo_metadata=seo_metadata)
 
 @main_bp.route('/index')
