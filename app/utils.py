@@ -1362,3 +1362,17 @@ def serialize_group(group):
         "meta_description": group.meta_description,
         "products": [serialize_product(p, include_reviews=False) for p in group.products]
     }
+
+def icon_url(url):
+    if not url: return ""
+    if '/static/' not in url: return url
+    base, _ = os.path.splitext(url)
+    if base.endswith("_icon") or base.endswith("_big"): return url
+    return base + "_icon.webp"
+
+def big_url(url):
+    if not url: return ""
+    if '/static/' not in url: return url
+    base, _ = os.path.splitext(url)
+    if base.endswith("_icon") or base.endswith("_big"): return url
+    return base + "_big.webp"

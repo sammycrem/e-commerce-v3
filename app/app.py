@@ -11,7 +11,7 @@ import random
 import os
 import io
 import csv
-from .utils import check_string_number_inclusion, concatenate_text_files, create_directory, download_file, download_image, encrypt_password, generate_id, generate_key, get_folders_in_directory, get_json_image_id, is_valid_image, rename_image, resize_image, convert_to_webp, generate_image_icon, ensure_icon_for_url, send_email, init_config, send_emailTls2, str_to_bool, process_image_data, translate
+from .utils import check_string_number_inclusion, concatenate_text_files, create_directory, download_file, download_image, encrypt_password, generate_id, generate_key, get_folders_in_directory, get_json_image_id, is_valid_image, rename_image, resize_image, convert_to_webp, generate_image_icon, ensure_icon_for_url, send_email, init_config, send_emailTls2, str_to_bool, process_image_data, translate, icon_url, big_url
 import logging
 import json
 from werkzeug.utils import secure_filename
@@ -184,21 +184,8 @@ def create_app(test_config=None):
             'active_groups': active_groups
         }
 
-    @app.template_filter('icon_url')
-    def icon_url_filter(url):
-        if not url: return url
-        if '/static/' not in url: return url
-        base, _ = os.path.splitext(url)
-        if base.endswith("_icon") or base.endswith("_big"): return url
-        return base + "_icon.webp"
-
-    @app.template_filter('big_url')
-    def big_url_filter(url):
-        if not url: return url
-        if '/static/' not in url: return url
-        base, _ = os.path.splitext(url)
-        if base.endswith("_icon") or base.endswith("_big"): return url
-        return base + "_big.webp"
+    app.template_filter('icon_url')(icon_url)
+    app.template_filter('big_url')(big_url)
 
 
     # Error Handlers

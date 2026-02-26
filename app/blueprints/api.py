@@ -47,7 +47,6 @@ def list_products():
 
     query = Product.query.options(
         joinedload(Product.images),
-        joinedload(Product.reviews),
         joinedload(Product.variants).joinedload(Variant.images)
     )
     # Public API: only published products
@@ -266,7 +265,6 @@ def admin_list_products():
     status_filter = request.args.get('status')
     query = Product.query.options(
         joinedload(Product.images),
-        joinedload(Product.reviews),
         joinedload(Product.variants).joinedload(Variant.images)
     ).order_by(Product.name)
 

@@ -14,22 +14,6 @@ from datetime import datetime, timezone
 
 main_bp = Blueprint('main', __name__)
 
-@main_bp.app_template_filter('icon_url')
-def icon_url(url):
-    if not url:
-        return ""
-    base, _ = os.path.splitext(url)
-    return f"{base}_icon.webp"
-
-@main_bp.app_template_filter('big_url')
-def big_url(url):
-    if not url:
-        return ""
-    base, _ = os.path.splitext(url)
-    if base.endswith("_big"):
-        return url
-    return f"{base}_big.webp"
-
 # Constants
 ADMIN_USER = 'admin' # Will be overridden by app config context if needed, but here we might need to access config.
 # Ideally, access config via current_app.config['APP_ADMIN_USER']
