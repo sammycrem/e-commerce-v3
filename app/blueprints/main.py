@@ -56,11 +56,29 @@ def home():
                 'category': cat,
                 'products': selected_products
             })
+    # Fetch featured products for the main grid
+    from ..models import ProductGroup
+    featured_group = ProductGroup.query.filter_by(slug='featured-collection', is_active=True).first()
+    featured_products = []
+    heading = 'Our Collection'
+    if featured_group:
+        featured_products = featured_group.products[:8]
+        heading = 'Featured Collection'
+
+    # Fallback to general products if no featured group or empty
+    if not featured_products:
+        featured_products = [p for p in all_published_products[:8]]
+        heading = 'Our Collection'
+
     seo_metadata = {
         'title': 'E-Commerce Pro - High Quality Products',
         'description': 'Welcome to E-Commerce Pro, your one-stop shop for high-quality products delivered to your door.'
     }
-    return render_template('index.html', category_data=category_data, seo_metadata=seo_metadata)
+    return render_template('index.html',
+                           category_data=category_data,
+                           featured_products=featured_products,
+                           heading=heading,
+                           seo_metadata=seo_metadata)
 
 @main_bp.route('/index')
 def index():
@@ -112,16 +130,27 @@ def shop_page(slug=None):
             group = ProductGroup.query.filter_by(slug=group_slug, is_active=True).first()
             if group:
                 query = query.join(Product.groups).filter(ProductGroup.id == group.id)
-                seo_metadata['heading'] = group.name
+                seo_metadata.update({
+                    'title': group.meta_title or f"{group.name} - Shop",
+                    'description': group.meta_description or f"Explore our {group.name} collection.",
+                    'heading': group.name
+                })
             else:
                 query = query.filter_by(category=category_name) # Fallback
                 seo_metadata['heading'] = category_name
         else:
             # Try to resolve category slug to name
             c = Category.query.filter_by(slug=category_name).first()
-            cat_actual_name = c.name if c else category_name
-            query = query.filter_by(category=cat_actual_name)
-            seo_metadata['heading'] = cat_actual_name
+            if c:
+                query = query.filter_by(category=c.name)
+                seo_metadata.update({
+                    'title': c.meta_title or f"{c.name} Products",
+                    'description': c.meta_description or f"Shop the best {c.name} products.",
+                    'heading': c.name
+                })
+            else:
+                query = query.filter_by(category=category_name)
+                seo_metadata['heading'] = category_name
 
     if q:
         query = query.filter(Product.name.ilike(f"%{q}%"))

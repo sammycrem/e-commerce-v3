@@ -57,13 +57,11 @@ window.addEventListener('DOMContentLoaded', async () => {
       searchInput.value = initialQ;
   }
 
+  // Simple in-memory cache for product queries
+  const productsCache = new Map();
+
   async function loadProducts(filters = {}) {
       if (!grid) return 0;
-
-      // Only show spinner if not already present
-      if (!grid.querySelector('.spinner-border')) {
-          grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
-      }
 
       const perPage = filters.per_page || 100;
       const params = new URLSearchParams({ per_page: perPage });
@@ -83,10 +81,25 @@ window.addEventListener('DOMContentLoaded', async () => {
 
       if (filters.q) params.append('q', filters.q);
 
+      const cacheKey = params.toString();
+      if (productsCache.has(cacheKey)) {
+          const cachedData = productsCache.get(cacheKey);
+          renderProducts(cachedData.products);
+          return cachedData.products.length;
+      }
+
+      // Only show spinner if not already present and not in cache
+      if (!grid.querySelector('.spinner-border')) {
+          grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+      }
       try {
         const res = await fetch(`/api/products?${params.toString()}`, { credentials: 'same-origin' });
         const data = await res.json();
         const products = data.products || [];
+
+        // Cache the results
+        productsCache.set(cacheKey, { products, timestamp: Date.now() });
+
         renderProducts(products);
         return products.length;
       } catch (err) {
@@ -197,6 +210,11 @@ window.addEventListener('DOMContentLoaded', async () => {
       const isHomePage = window.location.pathname === '/' || window.location.pathname === '/index';
       const noFilters = !initialCategory && !initialGroupId && !initialQ;
 
+      // Skip initial AJAX load if products are already server-rendered (prevents double-load flicker)
+      if (grid.querySelector('.product-card')) {
+          return;
+      }
+
       if (isHomePage && noFilters) {
           // Home page default behavior: Performance first, curated SEO content
           // Try loading featured collection (curated), fallback to all products if empty.
@@ -211,14 +229,11 @@ window.addEventListener('DOMContentLoaded', async () => {
               }
           });
       } else {
-          // Skip initial AJAX load if products are already server-rendered (prevents double-load flicker)
-          if (!grid.querySelector('.product-card')) {
-              loadProducts({
-                  category: initialCategory,
-                  group_id: initialGroupId,
-                  q: initialQ
-              });
-          }
+          loadProducts({
+              category: initialCategory,
+              group_id: initialGroupId,
+              q: initialQ
+          });
       }
   }
 });
