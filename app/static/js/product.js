@@ -465,8 +465,9 @@
     productPrice.dataset.basePriceCents = finalPrice;
 
     if (window.calculateDisplayPrice) {
-        const display = window.calculateDisplayPrice(finalPrice);
-        productPrice.innerHTML = display.formatted;
+        window.calculateDisplayPrice(finalPrice).then(display => {
+            productPrice.innerHTML = display.formatted;
+        });
     } else {
         productPrice.textContent = formatPrice(finalPrice);
     }
@@ -520,7 +521,9 @@
       if (productPrice) {
         productPrice.dataset.basePriceCents = baseCents;
         if (window.calculateDisplayPrice) {
-            productPrice.innerHTML = window.calculateDisplayPrice(baseCents).formatted;
+            window.calculateDisplayPrice(baseCents).then(display => {
+                productPrice.innerHTML = display.formatted;
+            });
         } else {
             productPrice.textContent = formatPrice(baseCents);
         }
