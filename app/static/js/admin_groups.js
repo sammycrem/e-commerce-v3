@@ -1,8 +1,8 @@
 // static/js/admin_groups.js
-(async function () {
+(function () {
   'use strict';
 
-  async function el(tag, attrs = {}, ...children) {
+  function el(tag, attrs = {}, ...children) {
     const e = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') e.className = attrs[k];
@@ -65,7 +65,6 @@
         currentGroupProducts = group.products || [];
         renderGroupProducts();
 
-        // Highlight active
         document.querySelectorAll('#group-list .list-group-item').forEach(btn => {
             if (btn.textContent === group.name) btn.classList.add('active');
             else btn.classList.remove('active');
@@ -81,14 +80,14 @@
         });
     }
 
-    async function getIconUrl(url) {
+    function getIconUrl(url) {
         if (!url) return '/static/img/placeholder.webp';
         const parts = url.split('.');
         const ext = parts.pop();
         return parts.join('.') + '_icon.webp';
     }
 
-    async function renderGroupProducts() {
+    function renderGroupProducts() {
         groupProductsContainer.innerHTML = '';
         if (currentGroupProducts.length === 0) {
             groupProductsContainer.appendChild(el('div', { class: 'text-muted small p-2' }, 'No products in this group.'));
@@ -106,7 +105,7 @@
                 ),
                 el('button', { class: 'btn btn-sm btn-outline-danger', type: 'button' }, 'Remove')
             );
-            item.querySelector ('button').onclick = () => {
+            item.querySelector('button').onclick = () => {
                 currentGroupProducts = currentGroupProducts.filter(x => x.product_sku !== p.product_sku);
                 renderGroupProducts();
             };
@@ -122,7 +121,6 @@
              return;
         }
 
-        // Fetch full product details to get images
         const res = await fetch(`/api/admin/products/${sku}`);
         if (res.ok) {
             const p = await res.json();
@@ -141,7 +139,6 @@
             return;
         }
 
-        // Fetch product to verify and get details
         const res = await fetch(`/api/admin/products/${sku}`);
         if (res.ok) {
             const p = await res.json();
@@ -153,7 +150,7 @@
         }
     };
 
-    newBtn.onclick = async () => {
+    newBtn.onclick = () => {
       groupNameInput.value = '';
       groupSlugInput.value = '';
       groupActiveInput.checked = false;
@@ -215,7 +212,7 @@
 
       const res = await fetch(`/api/admin/product-groups/${id}`, { method: 'DELETE', headers });
       if (res.ok) {
-        loadGroups();
+        await loadGroups();
         newBtn.onclick();
       } else {
         const err = await res.json();
@@ -223,13 +220,12 @@
       }
     };
 
-    loadGroups();
-    loadAllProducts();
+    await loadGroups();
+    await loadAllProducts();
 
-    // Refresh products list when products tab might have changed something
     window.refreshAllGroups = async () => {
-        loadGroups();
-        loadAllProducts();
+        await loadGroups();
+        await loadAllProducts();
     };
   });
 })();

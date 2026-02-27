@@ -1,9 +1,9 @@
 // static/js/admin_countries.js
-(async function() {
+(function() {
     'use strict';
 
     function $(sel, root = document) { return root.querySelector(sel); }
-    async function el(tag, attrs = {}, ...children) {
+    function el(tag, attrs = {}, ...children) {
         const e = document.createElement(tag);
         for (const k in attrs) {
             if (k === 'class') e.className = attrs[k];
@@ -35,7 +35,7 @@
 
         if (!countryList) return;
 
-        async function clearForm() {
+        function clearForm() {
             fName.value = '';
             fIso.value = '';
             fVat.value = '';
@@ -56,7 +56,7 @@
             }
         }
 
-        async function renderList(countries) {
+        function renderList(countries) {
             countryList.innerHTML = '';
             countries.forEach(c => {
                 const badge = c.is_default ? el('span', { class: 'badge bg-success ms-2' }, 'Default') : null;
@@ -71,30 +71,45 @@
                     headerContent,
                     el('small', {}, `VAT: ${(c.default_vat_rate * 100).toFixed(0)}%, Ship: ${(c.shipping_cost_cents/100).toFixed(2)} ${c.currency_code}`)
                 );
-                item.addEventListener('click', async () => {
-                    e.stopPropagation();
-                    if (!await confirm(`Set ${c.name} as default country?`)) return;
-                    try {
-                        const headers = {};
-                        const csrfToken = document.querySelector('meta[name="csrf-token"]');
-                        if (csrfToken) headers['X-CSRFToken'] = csrfToken.content;
-                        const res = await fetch(`/api/admin/countries/${c.id}/set-default`, { method: 'POST', headers: headers });
-                        if (res.ok) {
-                            loadCountries();
-                            // clear form to reset view
-                            clearForm();
-                        } else {
-                            await alert('Failed to set default');
+                item.addEventListener('click', () => {
+                    fName.value = c.name;
+                    fIso.value = c.iso_code;
+                    fVat.value = (c.default_vat_rate * 100).toFixed(0);
+                    fCur.value = c.currency_code;
+                    fShip.value = c.shipping_cost_cents;
+                    fFree.value = c.free_shipping_threshold_cents || '';
+                    currentId = c.id;
+                    $('#country-editor-title').textContent = 'Edit Country: ' + c.name;
+
+                    const makeDefaultBtn = el('button', { class: 'btn btn-sm btn-outline-success ms-3', type: 'button' }, 'Set as Default');
+                    makeDefaultBtn.onclick = async (e) => {
+                        e.stopPropagation();
+                        if (!await confirm(`Set ${c.name} as default country?`)) return;
+                        try {
+                            const headers = {};
+                            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                            if (csrfToken) headers['X-CSRFToken'] = csrfToken.content;
+                            const res = await fetch(`/api/admin/countries/${c.id}/set-default`, { method: 'POST', headers: headers });
+                            if (res.ok) {
+                                await loadCountries();
+                                clearForm();
+                            } else {
+                                await alert('Failed to set default');
+                            }
+                        } catch(err) {
+                            console.error(err);
                         }
-                    } catch(err) {
-                        console.error(err);
+                    };
+
+                    if (!c.is_default) {
+                        $('#country-editor-title').appendChild(makeDefaultBtn);
+                    } else {
+                        const defBadge = el('span', { class: 'badge bg-success ms-3' }, 'Default Country');
+                        $('#country-editor-title').appendChild(defBadge);
                     }
                 });
-                $('#country-editor-title').appendChild(makeDefaultBtn);
-            } else {
-                const defBadge = el('span', { class: 'badge bg-success ms-3' }, 'Default Country');
-                $('#country-editor-title').appendChild(defBadge);
-            }
+                countryList.appendChild(item);
+            });
         }
 
         newBtn.addEventListener('click', clearForm);
@@ -103,13 +118,12 @@
             const payload = {
                 name: fName.value.trim(),
                 iso_code: fIso.value.trim(),
-                default_vat_rate: parseFloat(fVat.value),
+                default_vat_rate: parseFloat(fVat.value) / 100,
                 currency_code: fCur.value.trim(),
                 shipping_cost_cents: parseInt(fShip.value),
                 free_shipping_threshold_cents: fFree.value ? parseInt(fFree.value) : null
             };
 
-            // Basic validation
             if (!payload.iso_code || payload.iso_code.length !== 2) {
                 await alert('ISO Code must be 2 characters');
                 return;
@@ -127,10 +141,7 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    loadCountries();
-                    // If creating new, form remains populated but acts as edit now?
-                    // Usually we clear or re-select. Let's just reload list.
-                    // If update logic relies on ISO match, it works.
+                    await loadCountries();
                     await alert('Saved successfully');
                 } else {
                     await alert('Error: ' + data.error);
@@ -153,7 +164,7 @@
                 const res = await fetch(`/api/admin/countries/${currentId}`, { method: 'DELETE', headers: headers });
                 if (res.ok) {
                     clearForm();
-                    loadCountries();
+                    await loadCountries();
                 } else {
                     const d = await res.json();
                     await alert(d.error || 'Failed');
@@ -163,6 +174,6 @@
             }
         });
 
-        loadCountries();
+        await loadCountries();
     });
 })();

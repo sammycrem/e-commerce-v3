@@ -4,7 +4,7 @@
 //    and inputs have specific classes so collection is robust.
 //  - variant.images are collected reliably and included in payload.
 
-window.addEventListener ('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => {
   const imagesContainer = document.getElementById('product-images');
   const addImageBtn = document.getElementById('add-product-image');
   const variantsContainer = document.getElementById('variants');
@@ -13,7 +13,7 @@ window.addEventListener ('DOMContentLoaded', () => {
   const feedback = document.getElementById('admin-feedback');
 
   // small helper to create element with attrs
-  async function el(tag, attrs = {}, ...children) {
+  function el(tag, attrs = {}, ...children) {
     const e = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') e.className = attrs[k];
@@ -28,7 +28,7 @@ window.addEventListener ('DOMContentLoaded', () => {
   }
 
   // PRODUCT IMAGE ROWS (tagged with data-role="product-image")
-  async function addProductImageRow(url = '', alt = '', order = 0) {
+  function addProductImageRow(url = '', alt = '', order = 0) {
     const row = document.createElement('div');
     row.className = 'image-row';
     row.setAttribute('data-role', 'product-image');
@@ -41,7 +41,41 @@ window.addEventListener ('DOMContentLoaded', () => {
     ordIn.value = order;
 
     const del = el('button', { class: 'btn btn-danger', type: 'button' }, 'Remove');
-    del.addEventListener('click', async () => {
+    del.addEventListener('click', () => row.remove());
+
+    row.appendChild(urlIn);
+    row.appendChild(altIn);
+    row.appendChild(ordIn);
+    row.appendChild(del);
+
+    imagesContainer.appendChild(row);
+  }
+
+  // VARIANT ROWS (each variant has a .variant-fields wrapper)
+  function addVariantRow(prefill = {}) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'variant-fields';
+
+    const sku = el('input', { type: 'text', class: 'form-input variant-sku', placeholder: 'Variant SKU' });
+    sku.value = prefill.sku || '';
+
+    const color = el('input', { type: 'text', class: 'form-input variant-color', placeholder: 'Color' });
+    color.value = prefill.color || '';
+
+    const size = el('input', { type: 'text', class: 'form-input variant-size', placeholder: 'Size' });
+    size.value = prefill.size || '';
+
+    const stock = el('input', { type: 'number', class: 'form-input variant-stock', placeholder: 'Stock', value: prefill.stock || 0 });
+
+    const priceMod = el('input', { type: 'text', class: 'form-input variant-price-mod', placeholder: 'Price modifier (e.g. 1.50)' });
+    priceMod.value = prefill.price_mod || '0.00';
+
+    // variant images container
+    const vImgs = document.createElement('div');
+    vImgs.className = 'variant-images';
+
+    const addVImgBtn = el('button', { class: 'btn', type: 'button' }, 'Add variant image');
+    addVImgBtn.addEventListener('click', () => {
       const r = document.createElement('div');
       r.className = 'variant-image-row';
       r.setAttribute('data-role', 'variant-image');
@@ -51,7 +85,48 @@ window.addEventListener ('DOMContentLoaded', () => {
       const o = el('input', { type: 'number', class: 'form-input img-order', placeholder: 'Order' });
 
       const d = el('button', { class: 'btn btn-danger', type: 'button' }, 'Remove');
-      d.addEventListener('click', async () => {
+      d.addEventListener('click', () => r.remove());
+
+      r.appendChild(u);
+      r.appendChild(a);
+      r.appendChild(o);
+      r.appendChild(d);
+      vImgs.appendChild(r);
+    });
+
+    const removeBtn = el('button', { class: 'btn btn-danger', type: 'button' }, 'Remove Variant');
+    removeBtn.addEventListener('click', () => wrapper.remove());
+
+    // Build wrapper DOM
+    wrapper.appendChild(el('label', {}, 'Variant SKU'));
+    wrapper.appendChild(sku);
+    wrapper.appendChild(el('label', {}, 'Color'));
+    wrapper.appendChild(color);
+    wrapper.appendChild(el('label', {}, 'Size'));
+    wrapper.appendChild(size);
+    wrapper.appendChild(el('label', {}, 'Stock quantity'));
+    wrapper.appendChild(stock);
+    wrapper.appendChild(el('label', {}, 'Price modifier in USD (e.g. 1.50)'));
+    wrapper.appendChild(priceMod);
+
+    // Variant images section
+    const vImagesContainer = el('div', {}, vImgs, addVImgBtn);
+    wrapper.appendChild(vImagesContainer);
+    wrapper.appendChild(removeBtn);
+
+    variantsContainer.appendChild(wrapper);
+  }
+
+  // Bind add buttons
+  addImageBtn.addEventListener('click', () => addProductImageRow());
+  addVariantBtn.addEventListener('click', () => addVariantRow());
+
+  // Add one default row for convenience
+  addVariantRow();
+  addProductImageRow();
+
+  // SUBMIT HANDLER (collects product images + variants + variant images robustly)
+  submitBtn.addEventListener('click', async () => {
     feedback.style.display = 'none';
     feedback.className = 'feedback';
 
@@ -145,7 +220,7 @@ window.addEventListener ('DOMContentLoaded', () => {
       feedback.textContent = `Product created: ${data.product_sku || data.name || ''}`;
 
       // Redirect to product page after a short delay
-      setTimeoutasync (() => {
+      setTimeout(() => {
         window.location.href = `/product/${encodeURIComponent(payload.product_sku)}`;
       }, 800);
 

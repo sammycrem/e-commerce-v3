@@ -1,9 +1,9 @@
 // static/js/admin_promo.js
 
-(async function () {
+(function () {
   'use strict';
 
-  async function el(tag, attrs = {}, ...children) {
+  function el(tag, attrs = {}, ...children) {
     const e = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') e.className = attrs[k];
@@ -35,7 +35,7 @@
         feedback.className = `alert alert-dismissible fade show mb-0 ${type === 'error' ? 'alert-danger' : 'alert-success'}`;
         feedback.textContent = msg;
         feedback.classList.remove('d-none');
-        setTimeoutasync (() => {
+        setTimeout(() => {
           feedback.classList.add('d-none');
         }, 5000);
       } else {
@@ -76,7 +76,25 @@
             el('small', {}, `${p.discount_type}: ${p.discount_type === 'FIXED' ? (p.discount_value / 100).toFixed(2) : p.discount_value}${p.discount_type === 'PERCENT' ? '%' : window.appConfig.currencySymbol}`),
             p.username ? el('div', { class: 'small text-primary' }, `User: ${p.username}`) : null
           );
-          item.addEventListener('click', async () => {
+          item.addEventListener('click', () => {
+            $('#promo_code').value = p.code;
+            $('#promo_type').value = p.discount_type;
+            $('#promo_value').value = p.discount_type === 'FIXED' ? (p.discount_value / 100).toFixed(2) : p.discount_value;
+            $('#promo_description').value = p.description || '';
+            $('#promo_active').checked = p.is_active;
+            $('#promo_valid_to').value = p.valid_to ? p.valid_to.substring(0, 16) : '';
+            $('#promo_user_id').value = p.user_id || '';
+            saveBtn.dataset.editId = p.id;
+            $('#promo-editor-title').textContent = 'Edit Promo Code: ' + p.code;
+          });
+          promoList.appendChild(item);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    saveBtn.addEventListener('click', async () => {
       const type = $('#promo_type').value;
       let val = $('#promo_value').value;
 
@@ -111,7 +129,7 @@
 
         const res = await fetch(url, {
           method,
-          headers: headers,
+          headers,
           body: JSON.stringify(payload)
         });
         if (res.ok) {

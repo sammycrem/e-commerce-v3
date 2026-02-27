@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     copyBtn.classList.remove('text-secondary');
                     copyBtn.classList.add('text-success');
-                    setTimeoutasync (() => {
+                    setTimeout (() => {
                         copyBtn.innerHTML = originalHTML;
                         copyBtn.classList.remove('text-success');
                         copyBtn.classList.add('text-secondary');

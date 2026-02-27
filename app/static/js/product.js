@@ -2,7 +2,7 @@
 // New gallery: vertical thumb rail, swatch thumbnails, size buttons, dynamic price update.
 // Outline for selected thumb/swatch: rgb(17, 24, 39) solid 3px
 
-async (() => {
+(() => {
   const SKU = window.PRODUCT_SKU;
   if (!SKU) return;
 
@@ -11,12 +11,12 @@ async (() => {
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const formatPrice = cents => `${window.appConfig.currencySymbol}${(cents/100).toFixed(2)}`;
 
-  async function getCsrfToken() {
+  function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     return meta ? meta.content : '';
   }
 
-  async function getIconUrl(url) {
+  function getIconUrl(url) {
     if (!url || !url.includes('/static/')) return url;
     const dotIdx = url.lastIndexOf('.');
     const base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
@@ -39,7 +39,7 @@ async (() => {
   const nextBtn = $('#next-image');
 
   // New helper for product cards
-  async function createProductCard(p) {
+  function createProductCard(p) {
     const col = document.createElement('div');
     col.className = 'col';
     const firstImg = (p.images && p.images[0]) ? getIconUrl(p.images[0].url) : '/static/img/placeholder.webp';
@@ -93,7 +93,7 @@ async (() => {
     }
   }
 
-  async function renderCartSidebar(data) {
+  function renderCartSidebar(data) {
     const container = $('#sidebar-cart-list');
     if (!container) return;
     container.innerHTML = '';
@@ -133,7 +133,53 @@ async (() => {
       const minusBtn = $('.minus', div);
       const plusBtn = $('.plus', div);
 
-      minusBtn.addEventListener('click', async () => {
+      minusBtn.addEventListener('click', () => updateCartItem(item.sku, item.quantity - 1));
+      plusBtn.addEventListener('click', () => updateCartItem(item.sku, item.quantity + 1));
+
+      container.appendChild(div);
+    });
+
+    const totalEl = $('#sidebar-total');
+    if (totalEl) {
+        totalEl.classList.add('product-price');
+        totalEl.dataset.basePriceCents = data.subtotal_cents || 0;
+        totalEl.textContent = formatPrice(data.subtotal_cents || 0);
+    }
+
+    // Trigger price update if logic available
+    if (window.updateAllPrices) window.updateAllPrices();
+  }
+
+  async function updateCartItem(sku, quantity) {
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({ sku, quantity: Math.max(0, quantity) })
+      });
+      if (res.ok) {
+        await refreshCartSidebar();
+      }
+    } catch (err) {
+      console.error('updateCartItem error:', err);
+    }
+  }
+
+  function goToCart() {
+    window.location.href = '/cart';
+  }
+
+  function renderTags(p) {
+    const container = $('#product-tags');
+    if (!container) return;
+    container.innerHTML = '';
+    const tags = [p.tag1, p.tag2, p.tag3].filter(t => t && t.trim());
+    const colors = ['bg-primary', 'bg-info', 'bg-dark'];
+    tags.forEach((tag, i) => {
         const badge = document.createElement('span');
         badge.className = `badge tag-badge ${colors[i % colors.length]}`;
         badge.textContent = tag;
@@ -142,7 +188,7 @@ async (() => {
   }
 
   // --- REVIEWS LOGIC ---
-  async function renderReviews(reviews) {
+  function renderReviews(reviews) {
     const list = $('#reviews-list');
     if (!list) return;
     list.innerHTML = '';
@@ -167,7 +213,7 @@ async (() => {
     });
   }
 
-  async function setupReviewForm() {
+  function setupReviewForm() {
     const form = $('#review-form');
     if (!form) return;
 
@@ -177,7 +223,7 @@ async (() => {
     const ratingInput = $('#rating-value');
 
     stars.forEach(star => {
-        star.addEventListener('click', async () => {
+        star.addEventListener('click', () => {
             const val = parseInt(star.dataset.value);
             ratingInput.value = val;
             stars.forEach(s => {
@@ -214,7 +260,7 @@ async (() => {
     const editBtn = $('#edit-review-btn');
     const formContainer = $('#review-form-container');
     if (editBtn && formContainer) {
-        editBtn.addEventListener('click', async () => {
+        editBtn.addEventListener('click', () => {
             formContainer.classList.toggle('d-none');
             if (!formContainer.classList.contains('d-none')) {
                 // Scroll to form
@@ -259,7 +305,7 @@ async (() => {
 
                 if (currentMethod === 'PUT') {
                     // Update mode specific
-                    setTimeoutasync (() => {
+                    setTimeout(() => {
                         feedback.textContent = '';
                         // Optionally hide form again
                         if(formContainer) formContainer.classList.add('d-none');
@@ -312,7 +358,7 @@ async (() => {
   const SELECTED_OUTLINE_STYLE = 'selected-outline';
 
   // create thumb DOM element
-  async function createThumb(imgObj, index) {
+  function createThumb(imgObj, index) {
     const wrapper = document.createElement('div');
     wrapper.className = 'thumb-item';
     wrapper.tabIndex = 0;
@@ -322,33 +368,33 @@ async (() => {
     img.loading = 'lazy';
     wrapper.appendChild(img);
 
-    wrapper.addEventListener('click', async () => {
+    wrapper.addEventListener('click', () => {
       setActiveImage(index);
     });
-    wrapper.addEventListener ('mouseenter', () => {
+    wrapper.addEventListener('mouseenter', () => {
       setActiveImage(index);
     });
-    wrapper.addEventListener ('keydown', (e) => {
+    wrapper.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveImage(index); }
     });
 
     return wrapper;
   }
 
-  async function setActiveImage(index) {
+  function setActiveImage(index) {
     const g = currentGallery;
     const img = g[index] || g[0];
     if (!img) return;
     mainImage.src = img.url;
     mainImage.alt = img.alt_text || product.name || '';
     // mark selected thumb
-    $$ ('.thumb-item', thumbRail).forEach((t, i) => {
+    $$('.thumb-item', thumbRail).forEach((t, i) => {
       if (i === index) t.classList.add(SELECTED_OUTLINE_STYLE); else t.classList.remove(SELECTED_OUTLINE_STYLE);
     });
   }
 
   // Render vertical thumb rail from images array
-  async function renderThumbRail(images) {
+  function renderThumbRail(images) {
     thumbRail.innerHTML = '';
     if (!images || images.length === 0) {
       thumbRail.style.display = 'none';
@@ -360,14 +406,14 @@ async (() => {
 
     if (prevBtn) prevBtn.style.display = images.length > 1 ? '' : 'none';
     if (nextBtn) nextBtn.style.display = images.length > 1 ? '' : 'none';
-    images.forEachasync ((img, idx) => {
+    images.forEach((img, idx) => {
       const t = createThumb(img, idx);
       thumbRail.appendChild(t);
     });
     setActiveImage(0);
   }
 
-  async function renderSwatches(variants) {
+  function renderSwatches(variants) {
     swatchGrid.innerHTML = '';
     // Group variants by color_name; first variant of color used for swatch image
     const colorMap = new Map();
@@ -389,7 +435,7 @@ async (() => {
       swatch.dataset.color = color;
       swatch.title = color;
       swatch.innerHTML = `<img src="${swatchImg}" alt="${color}" loading="lazy"><div class="swatch-label">${color}</div>`;
-      swatch.addEventListener('click', async () => {
+      swatch.addEventListener('click', () => {
         selectColor(color);
       });
       swatchGrid.appendChild(swatch);
@@ -398,7 +444,7 @@ async (() => {
     // If only one color, optionally hide label - that's up to styling.
   }
 
-  async function renderSizes(variants_for_color) {
+  function renderSizes(variants_for_color) {
     sizeButtons.innerHTML = '';
     const sizes = []; // unique
     (variants_for_color || []).forEach(v => {
@@ -412,14 +458,14 @@ async (() => {
       btn.className = 'size-btn';
       btn.textContent = sz;
       btn.dataset.size = sz;
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', () => {
         selectSize(sz);
       });
       sizeButtons.appendChild(btn);
     });
   }
 
-  async function selectColor(color) {
+  function selectColor(color) {
     selectedColor = color;
     // mark active swatch
     $$('.swatch', swatchGrid).forEach(s => s.classList.toggle(SELECTED_OUTLINE_STYLE, s.dataset.color === color));
@@ -435,13 +481,13 @@ async (() => {
     updateSelectedVariantBy(color, selectedSize);
   }
 
-  async function selectSize(size) {
+  function selectSize(size) {
     selectedSize = size;
     $$('.size-btn', sizeButtons).forEach(b => b.classList.toggle('active', b.dataset.size === size));
     updateSelectedVariantBy(selectedColor, selectedSize);
   }
 
-  async function updateSelectedVariantBy(color, size) {
+  function updateSelectedVariantBy(color, size) {
     const variant = product.variants.find(v =>
       ((v.color_name || '').trim() === (color || '').trim()) &&
       ((v.size || '').trim() === (size || '').trim())
@@ -581,7 +627,7 @@ async (() => {
       if (goToCartBtn) goToCartBtn.addEventListener('click', goToCart);
 
       if (prevBtn) {
-        prevBtn.addEventListener ('click', () => {
+        prevBtn.addEventListener('click', () => {
           if (!currentGallery || currentGallery.length < 2) return;
           const thumbs = $$('.thumb-item', thumbRail);
           const activeIndex = thumbs.findIndex(t => t.classList.contains(SELECTED_OUTLINE_STYLE));
@@ -591,7 +637,7 @@ async (() => {
       }
 
       if (nextBtn) {
-        nextBtn.addEventListener ('click', () => {
+        nextBtn.addEventListener('click', () => {
           if (!currentGallery || currentGallery.length < 2) return;
           const thumbs = $$('.thumb-item', thumbRail);
           const activeIndex = thumbs.findIndex(t => t.classList.contains(SELECTED_OUTLINE_STYLE));
@@ -601,7 +647,7 @@ async (() => {
       }
 
       // keyboard accessibility: left/right arrows cycle thumbs
-      document.addEventListener ('keydown', (e) => {
+      document.addEventListener('keydown', (e) => {
         if (!currentGallery || currentGallery.length < 1) return;
         const thumbs = $$('.thumb-item', thumbRail);
         const activeIndex = thumbs.findIndex(t => t.classList.contains(SELECTED_OUTLINE_STYLE));
@@ -619,7 +665,7 @@ async (() => {
       if (mainImageWrap && mainImage) {
         let isZoomed = false;
 
-        async function updateZoom(e) {
+        function updateZoom(e) {
           if (!isZoomed) return;
           const rect = mainImageWrap.getBoundingClientRect();
           const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -628,7 +674,7 @@ async (() => {
           mainImage.style.transform = 'scale(2)';
         }
 
-        async function toggleZoom(e) {
+        function toggleZoom(e) {
           isZoomed = !isZoomed;
           if (isZoomed) {
             mainImageWrap.classList.add('zoomed');
@@ -638,7 +684,7 @@ async (() => {
           }
         }
 
-        async function resetZoom() {
+        function resetZoom() {
           isZoomed = false;
           mainImageWrap.classList.remove('zoomed');
           mainImage.style.transform = 'scale(1)';

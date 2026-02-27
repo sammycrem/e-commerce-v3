@@ -455,13 +455,15 @@
                              <div class="border border-danger rounded p-3 bg-light">
                                  <p class="text-danger small fw-bold">Factory Reset Application</p>
                                  <p class="small text-muted">This will delete ALL data (products, orders, users) and restore the application to its initial state.</p>
-                                 <div class="mb-3">
-                                     <label class="form-label small fw-bold">Enter Reset Code</label>
-                                     <input type="password" id="reset_code" class="form-control" placeholder="Enter APP_RESET_CODE">
-                                 </div>
-                                 <button id="btn-factory-reset" class="btn btn-danger w-100">
-                                     <i class="fas fa-exclamation-triangle me-2"></i>Factory Reset
-                                 </button>
+                                 <form id="factory-reset-form" onsubmit="return false;">
+                                     <div class="mb-3">
+                                         <label class="form-label small fw-bold">Enter Reset Code</label>
+                                         <input type="password" id="reset_code" class="form-control" placeholder="Enter APP_RESET_CODE" autocomplete="current-password">
+                                     </div>
+                                     <button id="btn-factory-reset" type="button" class="btn btn-danger w-100">
+                                         <i class="fas fa-exclamation-triangle me-2"></i>Factory Reset
+                                     </button>
+                                 </form>
                              </div>
                         </div>
                     </div>

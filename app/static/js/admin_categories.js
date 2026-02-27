@@ -1,8 +1,8 @@
 // static/js/admin_categories.js
-(async function () {
+(function () {
   'use strict';
 
-  async function el(tag, attrs = {}, ...children) {
+  function el(tag, attrs = {}, ...children) {
     const e = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') e.className = attrs[k];
@@ -40,7 +40,7 @@
             class: 'list-group-item list-group-item-action',
             type: 'button'
         }, cat.name);
-        item.onclick = async () => {
+        item.onclick = () => {
           catNameInput.value = cat.name;
           catSlugInput.value = cat.slug || '';
           catMetaTitleInput.value = cat.meta_title || '';
@@ -51,13 +51,12 @@
         categoryList.appendChild(item);
       });
 
-      // Also trigger a refresh of product category dropdown if it exists
       if (window.refreshProductCategories) {
           window.refreshProductCategories(data);
       }
     }
 
-    newBtn.onclick = async () => {
+    newBtn.onclick = () => {
       catNameInput.value = '';
       catSlugInput.value = '';
       catMetaTitleInput.value = '';
@@ -93,7 +92,7 @@
       });
 
       if (res.ok) {
-        loadCategories();
+        await loadCategories();
         newBtn.onclick();
       } else {
         const err = await res.json();
@@ -112,7 +111,7 @@
 
       const res = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE', headers });
       if (res.ok) {
-        loadCategories();
+        await loadCategories();
         newBtn.onclick();
       } else {
         const err = await res.json();
@@ -120,7 +119,7 @@
       }
     };
 
-    loadCategories();
+    await loadCategories();
     window.refreshAllCategories = loadCategories;
   });
 })();

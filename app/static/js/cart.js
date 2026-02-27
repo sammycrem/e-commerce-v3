@@ -2,7 +2,7 @@
 // Full cart script: renders session cart, lets user update quantities/remove items,
 // applies promo codes, shows VAT breakdown and performs checkout.
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   // Elements from the new cart.html structure
   const cartContainer = document.getElementById('cart-container');
   const cartSummary = document.getElementById('cart-summary');
@@ -20,19 +20,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   let lastCalc = null; // keep last calculate-totals response
 
   // Format cents -> CurrencyX.YY
-  async function formatPrice(cents) {
+  function formatPrice(cents) {
     if (typeof cents !== 'number') cents = Number(cents || 0);
     // Use last calculated currency symbol if available, otherwise default
     const symbol = (lastCalc && lastCalc.currency_symbol) || (window.appConfig && window.appConfig.currencySymbol) || '€';
     return `${symbol}${(cents / 100).toFixed(2)}`;
   }
 
-  async function getCsrfToken() {
+  function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     return meta ? meta.content : '';
   }
 
-  async function getIconUrl(url) {
+  function getIconUrl(url) {
     if (!url || !url.includes('/static/')) return url;
     const dotIdx = url.lastIndexOf('.');
     const base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return base + '_icon.webp';
   }
 
-  async function updateVatLabel() {
+  function updateVatLabel() {
     if (!totalLabel) return;
     // Check toggle state or fallback to local storage
     let showVat = false;
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  async function renderCart(data) {
+  function renderCart(data) {
     cartContainer.innerHTML = ''; // Clear existing content
 
     if (!data || !Array.isArray(data.items) || data.items.length === 0) {
@@ -158,13 +158,89 @@ document.addEventListener('DOMContentLoaded', async () => {
       cartContainer.appendChild(tr);
 
       // Event Listeners for quantity controls
-      minusBtn.addEventListener('click', async () => {
+      minusBtn.addEventListener('click', () => updateCartItem(item.sku, item.quantity - 1));
+      plusBtn.addEventListener('click', () => updateCartItem(item.sku, item.quantity + 1));
+      qtyInput.addEventListener('change', (e) => {
         const newQty = parseInt(e.target.value, 10);
         if (!isNaN(newQty) && newQty >= 0) {
           updateCartItem(item.sku, newQty);
         }
       });
-      deleteBtn.addEventListener('click', async () => {
+      deleteBtn.addEventListener('click', () => updateCartItem(item.sku, 0));
+    });
+  }
+
+  async function updateCartItem(sku, quantity) {
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({ sku, quantity: Math.max(0, quantity) })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        console.error('Failed to update cart:', data.error);
+        return;
+      }
+      await refreshCart();
+    } catch (err) {
+      console.error('updateCartItem error:', err);
+    }
+  }
+
+  async function recalcTotals() {
+    const items = (cartData.items || []).map(it => ({ sku: it.sku, quantity: it.quantity }));
+
+    try {
+      const res = await fetch('/api/calculate-totals', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({ items, shipping_country_iso: null, promo_code: null })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Fallback display
+        if (subtotalEl) subtotalEl.textContent = formatPrice(cartData.subtotal_cents || 0);
+        if (totalEl) totalEl.textContent = formatPrice(cartData.subtotal_cents || 0);
+        return;
+      }
+
+      lastCalc = data;
+
+      // Update Subtotal
+      if (subtotalEl) {
+          subtotalEl.classList.add('product-price');
+          subtotalEl.dataset.basePriceCents = data.subtotal_cents || 0;
+          subtotalEl.textContent = formatPrice(data.subtotal_cents || 0); // Fallback
+      }
+
+      // Update Total
+      const subtotalAfterDiscount = (data.subtotal_after_discount_cents || data.subtotal_cents || 0);
+      if (totalEl) {
+          totalEl.classList.add('product-price');
+          totalEl.dataset.basePriceCents = subtotalAfterDiscount;
+          totalEl.textContent = formatPrice(subtotalAfterDiscount); // Fallback
+      }
+
+      // Apply dynamic pricing if available
+      if (window.updateAllPrices) window.updateAllPrices();
+
+    } catch (err) {
+      console.error('recalcTotals error:', err);
+    }
+  }
+
+  if (checkoutBtn) {
+      checkoutBtn.addEventListener('click', (e) => {
         e.preventDefault();
         const isAuthenticated = checkoutBtn.dataset.isAuthenticated === 'true';
         if (isAuthenticated) {
@@ -176,7 +252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (continueShoppingBtn) {
-      continueShoppingBtn.addEventListener('click', async () => {
+      continueShoppingBtn.addEventListener('click', () => {
         window.location.href = '/index';
       });
   }

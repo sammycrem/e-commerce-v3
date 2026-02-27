@@ -46,7 +46,7 @@
       boxShadow: '0 6px 18px rgba(0,0,0,0.08)'
     });
     node.appendChild(msg);
-    setTimeoutasync (() => {
+    setTimeout (() => {
       msg.remove();
       if (!node.hasChildNodes()) node.remove();
     }, timeout);
