@@ -193,7 +193,7 @@
       if (res.ok) {
         const savedGroup = await res.json();
         await loadGroups();
-        loadGroupDetail(savedGroup.id);
+        await loadGroupDetail(savedGroup.id);
         await alert('Group saved successfully');
       } else {
         const err = await res.json();

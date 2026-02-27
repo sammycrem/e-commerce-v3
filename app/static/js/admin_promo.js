@@ -134,7 +134,7 @@
         });
         if (res.ok) {
           showFeedback('Promotion saved successfully');
-          loadPromos();
+          await loadPromos();
           if (!editId) resetForm();
         } else {
           const data = await res.json();
@@ -162,7 +162,7 @@
         if (res.ok) {
           showFeedback('Promotion deleted');
           resetForm();
-          loadPromos();
+          await loadPromos();
         } else {
           showFeedback('Failed to delete', 'error');
         }
@@ -173,7 +173,7 @@
 
     newBtn.addEventListener('click', resetForm);
 
-    async function resetForm() {
+    function resetForm() {
       $('#promo_code').value = '';
       $('#promo_type').value = 'PERCENT';
       $('#promo_value').value = '';
@@ -185,7 +185,7 @@
       $('#promo-editor-title').textContent = 'Create / Edit Promo Code';
     }
 
-    loadUsers();
-    loadPromos();
+    await loadUsers();
+    await loadPromos();
   });
 })();

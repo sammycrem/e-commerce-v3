@@ -206,7 +206,7 @@
         style: 'width:50px; height:50px; object-fit:cover; border-radius:4px; border:1px solid #eee;'
       });
 
-      urlInput.addEventListener ('input', () => {
+      urlInput.addEventListener('input', () => {
         previewImg.src = getIconUrl(urlInput.value) || '/static/img/placeholder_small.webp';
       });
 
@@ -254,7 +254,7 @@
       }
 
       priceMod.addEventListener('input', updateFinalPrice);
-      color.addEventListener ('change', () => {
+      color.addEventListener('change', () => {
         const selected = PREDEFINED_COLORS.find(c => c.name.toLowerCase() === color.value.toLowerCase());
         if (selected) {
           const base = parsePriceToCents($('#base_price').value);
@@ -275,7 +275,7 @@
           style: 'width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #eee;'
         });
 
-        vUrlInput.addEventListener ('input', () => {
+        vUrlInput.addEventListener('input', () => {
           vPreviewImg.src = getIconUrl(vUrlInput.value) || '/static/img/placeholder_small.webp';
         });
 
@@ -324,7 +324,7 @@
       size.addEventListener('input', updateVariantSku);
 
       const duplicateBtn = el('button', { class: 'btn btn-outline-primary', type: 'button', style: 'margin-right: 8px;' }, 'Duplicate');
-      duplicateBtn.addEventListener ('click', () => {
+      duplicateBtn.addEventListener('click', () => {
         const newSuffix = generateVariantSkuSuffix();
         const currentPrefill = {
           sku: sku.value.replace(wrapper.dataset.skuSuffix, newSuffix),
@@ -403,7 +403,7 @@
             style: 'margin-left: 8px; cursor: pointer; font-size: 1.1em;',
             title: 'Copy SKU'
         });
-        copyIcon.addEventListener ('click', (e) => {
+        copyIcon.addEventListener('click', (e) => {
             e.stopPropagation();
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(p.product_sku).then(() => {

@@ -187,7 +187,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Search Handler
   if (searchForm) {
-      searchForm.addEventListener ('submit', (e) => {
+      searchForm.addEventListener('submit', (e) => {
           if (grid) {
               e.preventDefault();
               const category = categorySelect ? categorySelect.value : '';
@@ -200,7 +200,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Auto-filter on category select
   if (categorySelect) {
-      categorySelect.addEventListener ('change', () => {
+      categorySelect.addEventListener('change', () => {
           const val = categorySelect.value;
           const q = searchInput ? searchInput.value.trim() : '';
 

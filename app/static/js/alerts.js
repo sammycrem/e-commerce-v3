@@ -24,7 +24,7 @@
     window.customAlert = function(message, title = 'Message') {
         return new Promise((resolve) => {
             resolveActiveAlert = resolve;
-            if (titleEl) titleEl.textContent = title;
+            titleEl.textContent = title;
             messageEl.textContent = message;
             cancelBtn.style.display = 'none';
             okBtn.textContent = 'OK';
@@ -35,7 +35,7 @@
     window.customConfirm = function(message, title = 'Confirmation') {
         return new Promise((resolve) => {
             resolveActiveAlert = resolve;
-            if (titleEl) titleEl.textContent = title;
+            titleEl.textContent = title;
             messageEl.textContent = message;
             cancelBtn.style.display = 'inline-block';
             okBtn.textContent = 'OK';
@@ -65,20 +65,20 @@
         closeAlert(false);
     });
 
+    // Close on overlay click (defaults to cancel/false)
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
             closeAlert(false);
         }
     });
 
+    // Handle Escape key
     window.addEventListener('keydown', (e) => {
-        if (overlay.classList.contains('show')) {
-            if (e.key === 'Escape') {
-                closeAlert(false);
-            }
-            if (e.key === 'Enter') {
-                closeAlert(true);
-            }
+        if (e.key === 'Escape' && overlay.classList.contains('show')) {
+            closeAlert(false);
+        }
+        if (e.key === 'Enter' && overlay.classList.contains('show')) {
+            closeAlert(true);
         }
     });
 })();

@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     copyBtn.classList.remove('text-secondary');
                     copyBtn.classList.add('text-success');
-                    setTimeout (() => {
+                    setTimeoutasync (() => {
                         copyBtn.innerHTML = originalHTML;
                         copyBtn.classList.remove('text-success');
                         copyBtn.classList.add('text-secondary');
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (fileInput && filenameInput) {
-        fileInput.addEventListener ('change', () => {
+        fileInput.addEventListener('change', () => {
             if (fileInput.files.length > 0) {
                 let name = fileInput.files[0].name;
                 // Strip extension
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (folderInput) {
-        folderInput.addEventListener ('change', () => {
+        folderInput.addEventListener('change', () => {
             const files = Array.from(folderInput.files).filter(f => f.type.startsWith('image/'));
             if (files.length > 0) {
                 folderOptions.classList.remove('d-none');
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Toggle prefix container
     document.querySelectorAll('input[name="folderNamingMode"]').forEach(radio => {
-        radio.addEventListener ('change', () => {
+        radio.addEventListener('change', () => {
             if (nameRenameRadio.checked) {
                 prefixContainer.classList.remove('d-none');
             } else {
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Also listen for tab show
     document.querySelectorAll('button[data-tab="gallery"]').forEach(btn => {
-        btn.addEventListener ('click', () => {
+        btn.addEventListener('click', () => {
             if (allPhotos.length === 0) loadGallery();
         });
     });

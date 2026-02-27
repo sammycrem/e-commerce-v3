@@ -18,7 +18,7 @@
 
         // 2. Event Listeners
         if (vatToggle) {
-            vatToggle.addEventListener ('change', () => {
+            vatToggle.addEventListener('change', () => {
                 const isChecked = vatToggle.checked;
                 localStorage.setItem('show_vat', isChecked);
                 handleVatVisibility(isChecked);
@@ -27,7 +27,7 @@
         }
 
         if (shipToSelect) {
-            shipToSelect.addEventListener ('change', () => {
+            shipToSelect.addEventListener('change', () => {
                 const val = shipToSelect.value;
                 if (val) localStorage.setItem('selected_country_id', val);
                 else localStorage.removeItem('selected_country_id');
@@ -112,7 +112,7 @@
 
         async function updatePrices() {
             const showVat = vatToggle ? vatToggle.checked : false;
-            const rate = getEffectiveVatRate();
+            const rate = await getEffectiveVatRate();
             const symbol = window.appConfig.currencySymbol || '€';
 
             document.querySelectorAll('.product-price').forEach(el => {
@@ -142,7 +142,7 @@
         // Export for other scripts if needed (e.g., product page variant updates)
         window.calculateDisplayPrice = async function(baseCents) {
              const showVat = vatToggle ? vatToggle.checked : false;
-             const rate = getEffectiveVatRate();
+             const rate = await getEffectiveVatRate();
              const symbol = window.appConfig.currencySymbol || '€';
 
              let finalCents = baseCents;

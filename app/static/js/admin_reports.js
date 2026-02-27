@@ -157,7 +157,7 @@
             const tbody = table.querySelector('tbody');
 
             headers.forEach(th => {
-                th.addEventListener ('click', () => {
+                th.addEventListener('click', () => {
                     const colIdx = parseInt(th.dataset.col);
                     const rows = Array.from(tbody.querySelectorAll('tr'));
                     const isAsc = th.dataset.order === 'asc';

@@ -40,7 +40,7 @@
             class: 'list-group-item list-group-item-action',
             type: 'button'
         }, cat.name);
-        item.onclick = () => {
+        item.onclick = async () => {
           catNameInput.value = cat.name;
           catSlugInput.value = cat.slug || '';
           catMetaTitleInput.value = cat.meta_title || '';

@@ -1,12 +1,10 @@
 // static/js/product.js
 // New gallery: vertical thumb rail, swatch thumbnails, size buttons, dynamic price update.
-// Outline for selected thumb/swatch: rgb(17, 24, 39) solid 3px
 
 (() => {
   const SKU = window.PRODUCT_SKU;
   if (!SKU) return;
 
-  // helpers
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const formatPrice = cents => `${window.appConfig.currencySymbol}${(cents/100).toFixed(2)}`;
@@ -24,7 +22,6 @@
     return base + '_icon.webp';
   }
 
-  // DOM
   const thumbRail = $('#thumb-rail');
   const mainImage = $('#main-image');
   const productName = $('#product-name');
@@ -38,7 +35,6 @@
   const prevBtn = $('#prev-image');
   const nextBtn = $('#next-image');
 
-  // New helper for product cards
   function createProductCard(p) {
     const col = document.createElement('div');
     col.className = 'col';
@@ -57,10 +53,12 @@
 
   async function fetchAndRenderProductList(skus, listId, sectionId) {
     if (!skus || !skus.length) {
-      $(sectionId).classList.add('d-none');
+      const s = $(sectionId);
+      if (s) s.classList.add('d-none');
       return;
     }
     const listContainer = $(listId);
+    if (!listContainer) return;
     listContainer.innerHTML = '';
 
     try {
@@ -72,14 +70,16 @@
           products.forEach(p => {
             listContainer.appendChild(createProductCard(p));
           });
-          $(sectionId).classList.remove('d-none');
+          const s = $(sectionId);
+          if (s) s.classList.remove('d-none');
           return;
         }
       }
     } catch (e) {
       console.error(`Error fetching batch SKUs:`, e);
     }
-    $(sectionId).classList.add('d-none');
+    const s = $(sectionId);
+    if (s) s.classList.add('d-none');
   }
 
   async function refreshCartSidebar() {
@@ -130,11 +130,8 @@
         </div>
       `;
 
-      const minusBtn = $('.minus', div);
-      const plusBtn = $('.plus', div);
-
-      minusBtn.addEventListener('click', () => updateCartItem(item.sku, item.quantity - 1));
-      plusBtn.addEventListener('click', () => updateCartItem(item.sku, item.quantity + 1));
+      div.querySelector('.minus').addEventListener('click', () => updateCartItem(item.sku, item.quantity - 1));
+      div.querySelector('.plus').addEventListener('click', () => updateCartItem(item.sku, item.quantity + 1));
 
       container.appendChild(div);
     });
@@ -146,7 +143,6 @@
         totalEl.textContent = formatPrice(data.subtotal_cents || 0);
     }
 
-    // Trigger price update if logic available
     if (window.updateAllPrices) window.updateAllPrices();
   }
 
@@ -187,7 +183,6 @@
     });
   }
 
-  // --- REVIEWS LOGIC ---
   function renderReviews(reviews) {
     const list = $('#reviews-list');
     if (!list) return;
@@ -217,7 +212,6 @@
     const form = $('#review-form');
     if (!form) return;
 
-    // Star rating interaction
     const ratingContainer = $('#rating-input');
     const stars = $$('i', ratingContainer);
     const ratingInput = $('#rating-value');
@@ -239,12 +233,9 @@
         });
     });
 
-    // Store original text
     const submitBtn = form.querySelector('button[type="submit"]');
-    const originalBtnText = submitBtn.textContent;
     let currentMethod = form.dataset.method || 'POST';
 
-    // Initialize stars based on existing value (for edit mode)
     const initialRating = parseInt(ratingInput.value || '0');
     if (initialRating > 0) {
         stars.forEach(s => {
@@ -256,14 +247,12 @@
         });
     }
 
-    // Handle Edit Button Toggle
     const editBtn = $('#edit-review-btn');
     const formContainer = $('#review-form-container');
     if (editBtn && formContainer) {
         editBtn.addEventListener('click', () => {
             formContainer.classList.toggle('d-none');
             if (!formContainer.classList.contains('d-none')) {
-                // Scroll to form
                 formContainer.scrollIntoView({ behavior: 'smooth' });
             }
         });
@@ -297,21 +286,13 @@
             if (res.ok) {
                 feedback.textContent = 'Review saved successfully!';
                 feedback.className = 'text-success small';
-                // Don't reset form if updating, maybe hide it?
-                // For now just refresh reviews
-
-                // Refresh reviews
                 renderReviews(await fetchReviews());
-
                 if (currentMethod === 'PUT') {
-                    // Update mode specific
                     setTimeout(() => {
                         feedback.textContent = '';
-                        // Optionally hide form again
                         if(formContainer) formContainer.classList.add('d-none');
                     }, 2000);
                 } else {
-                    // Create mode specific
                     form.reset();
                     stars.forEach(s => {
                         s.classList.remove('bi-star-fill');
@@ -345,19 +326,15 @@
       } catch (e) { console.error(e); }
       return [];
   }
-  // ---------------------
 
-  // state
   let product = null;
   let selectedVariant = null;
   let selectedColor = null;
   let selectedSize = null;
-  let currentGallery = []; // array of {url, alt_text, display_order}
+  let currentGallery = [];
 
-  // set focused outline style class
   const SELECTED_OUTLINE_STYLE = 'selected-outline';
 
-  // create thumb DOM element
   function createThumb(imgObj, index) {
     const wrapper = document.createElement('div');
     wrapper.className = 'thumb-item';
@@ -368,12 +345,8 @@
     img.loading = 'lazy';
     wrapper.appendChild(img);
 
-    wrapper.addEventListener('click', () => {
-      setActiveImage(index);
-    });
-    wrapper.addEventListener('mouseenter', () => {
-      setActiveImage(index);
-    });
+    wrapper.addEventListener('click', () => setActiveImage(index));
+    wrapper.addEventListener('mouseenter', () => setActiveImage(index));
     wrapper.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveImage(index); }
     });
@@ -387,14 +360,13 @@
     if (!img) return;
     mainImage.src = img.url;
     mainImage.alt = img.alt_text || product.name || '';
-    // mark selected thumb
     $$('.thumb-item', thumbRail).forEach((t, i) => {
       if (i === index) t.classList.add(SELECTED_OUTLINE_STYLE); else t.classList.remove(SELECTED_OUTLINE_STYLE);
     });
   }
 
-  // Render vertical thumb rail from images array
   function renderThumbRail(images) {
+    if (!thumbRail) return;
     thumbRail.innerHTML = '';
     if (!images || images.length === 0) {
       thumbRail.style.display = 'none';
@@ -407,15 +379,14 @@
     if (prevBtn) prevBtn.style.display = images.length > 1 ? '' : 'none';
     if (nextBtn) nextBtn.style.display = images.length > 1 ? '' : 'none';
     images.forEach((img, idx) => {
-      const t = createThumb(img, idx);
-      thumbRail.appendChild(t);
+      thumbRail.appendChild(createThumb(img, idx));
     });
     setActiveImage(0);
   }
 
   function renderSwatches(variants) {
+    if (!swatchGrid) return;
     swatchGrid.innerHTML = '';
-    // Group variants by color_name; first variant of color used for swatch image
     const colorMap = new Map();
     (variants || []).forEach(v => {
       const color = (v.color_name || 'Default').trim();
@@ -423,10 +394,7 @@
       colorMap.get(color).push(v);
     });
 
-    // create swatch node for each color
-    let idx = 0;
     for (const [color, arr] of colorMap.entries()) {
-      // pick variant that has images or first in array
       const firstVariant = arr.find(x => x.images && x.images.length) || arr[0];
       const swatchImg = firstVariant && firstVariant.images && firstVariant.images[0] ? getIconUrl(firstVariant.images[0].url) : getIconUrl((product.images && product.images[0] && product.images[0].url) || '');
       const swatch = document.createElement('button');
@@ -435,18 +403,15 @@
       swatch.dataset.color = color;
       swatch.title = color;
       swatch.innerHTML = `<img src="${swatchImg}" alt="${color}" loading="lazy"><div class="swatch-label">${color}</div>`;
-      swatch.addEventListener('click', () => {
-        selectColor(color);
-      });
+      swatch.addEventListener('click', () => selectColor(color));
       swatchGrid.appendChild(swatch);
-      idx++;
     }
-    // If only one color, optionally hide label - that's up to styling.
   }
 
   function renderSizes(variants_for_color) {
+    if (!sizeButtons) return;
     sizeButtons.innerHTML = '';
-    const sizes = []; // unique
+    const sizes = [];
     (variants_for_color || []).forEach(v => {
       const s = v.size || 'One Size';
       if (!sizes.includes(s)) sizes.push(s);
@@ -458,26 +423,19 @@
       btn.className = 'size-btn';
       btn.textContent = sz;
       btn.dataset.size = sz;
-      btn.addEventListener('click', () => {
-        selectSize(sz);
-      });
+      btn.addEventListener('click', () => selectSize(sz));
       sizeButtons.appendChild(btn);
     });
   }
 
   function selectColor(color) {
     selectedColor = color;
-    // mark active swatch
     $$('.swatch', swatchGrid).forEach(s => s.classList.toggle(SELECTED_OUTLINE_STYLE, s.dataset.color === color));
-    // pick available variants with this color
     const variants_for_color = product.variants.filter(v => (v.color_name || '').trim() === color);
     renderSizes(variants_for_color);
-    // auto-select first available size
     const firstAvailable = variants_for_color.find(v => v.stock_quantity > 0) || variants_for_color[0];
     selectedSize = firstAvailable ? firstAvailable.size : null;
-    // highlight size button
     $$('.size-btn', sizeButtons).forEach(b => b.classList.toggle('active', b.dataset.size === selectedSize));
-    // choose a variant
     updateSelectedVariantBy(color, selectedSize);
   }
 
@@ -496,7 +454,6 @@
       variantMessage.textContent = 'This combination is not available.';
       selectedVariant = null;
       productPrice.textContent = formatPrice(product.base_price_cents || 0);
-      // use product images
       currentGallery = (product.images || []).slice();
       renderThumbRail(currentGallery);
       return;
@@ -504,13 +461,9 @@
     selectedVariant = variant;
     variantMessage.textContent = variant.stock_quantity > 0 ? '' : 'Out of stock';
 
-    // compute final price
     const finalPrice = (product.base_price_cents || 0) + (variant.price_modifier_cents || 0);
-
-    // Update data attribute for pricing.js to pick up if it runs later
     productPrice.dataset.basePriceCents = finalPrice;
 
-    // Use pricing.js logic if available
     if (window.calculateDisplayPrice) {
         const display = window.calculateDisplayPrice(finalPrice);
         productPrice.innerHTML = display.formatted;
@@ -518,10 +471,8 @@
         productPrice.textContent = formatPrice(finalPrice);
     }
 
-    // update gallery: prefer variant.images then product.images
     currentGallery = (variant.images && variant.images.length) ? variant.images.slice() : (product.images || []).slice();
     renderThumbRail(currentGallery);
-    // select first variant image
     setActiveImage(0);
   }
 
@@ -547,8 +498,8 @@
         await alert(data.error || 'Failed to add to cart');
       } else {
         addToCartBtn.textContent = 'Added ✓';
-        setTimeout(()=> addToCartBtn.textContent = 'Add to cart', 1500);
-        refreshCartSidebar();
+        setTimeout(() => addToCartBtn.textContent = 'Add to cart', 1500);
+        await refreshCartSidebar();
       }
     } catch (err) {
       console.error(err);
@@ -556,7 +507,6 @@
     }
   }
 
-  // fetch product and init
   async function init() {
     try {
       const res = await fetch(`/api/products/${encodeURIComponent(SKU)}`, { credentials: 'same-origin' });
@@ -567,62 +517,48 @@
       productDescription.textContent = product.short_description || product.description || '';
 
       const baseCents = product.base_price_cents || 0;
-      productPrice.dataset.basePriceCents = baseCents;
-
-      if (window.calculateDisplayPrice) {
-          productPrice.innerHTML = window.calculateDisplayPrice(baseCents).formatted;
-      } else {
-          productPrice.textContent = formatPrice(baseCents);
+      if (productPrice) {
+        productPrice.dataset.basePriceCents = baseCents;
+        if (window.calculateDisplayPrice) {
+            productPrice.innerHTML = window.calculateDisplayPrice(baseCents).formatted;
+        } else {
+            productPrice.textContent = formatPrice(baseCents);
+        }
       }
 
-      // Render tags
       renderTags(product);
 
-      // Product Details & Description
       if ((product.product_details && product.product_details.trim()) || (product.description && product.description.trim())) {
         const detailContainer = $('#product-details-container');
         const descContainer = $('#full-description-container');
-
-        if (detailContainer && product.product_details) {
-            detailContainer.textContent = product.product_details;
-        }
-        if (descContainer && product.description) {
-            descContainer.textContent = product.description;
-        }
-
-        $('#product-details-section').classList.remove('d-none');
+        if (detailContainer && product.product_details) detailContainer.textContent = product.product_details;
+        if (descContainer && product.description) descContainer.textContent = product.description;
+        const section = $('#product-details-section');
+        if (section) section.classList.remove('d-none');
       }
 
-      // Related & Proposed Products
-      fetchAndRenderProductList(product.related_products, '#related-products-list', '#related-products-section');
-      fetchAndRenderProductList(product.proposed_products, '#proposed-products-list', '#proposed-products-section');
+      await fetchAndRenderProductList(product.related_products, '#related-products-list', '#related-products-section');
+      await fetchAndRenderProductList(product.proposed_products, '#proposed-products-list', '#proposed-products-section');
 
-      // Reviews
       renderReviews(product.reviews || []);
       setupReviewForm();
 
-      // Refresh cart sidebar on init
-      refreshCartSidebar();
+      await refreshCartSidebar();
 
-      // ensure images arrays exist
       product.images = product.images || [];
       (product.variants || []).forEach(v => v.images = v.images || []);
 
-      // initial gallery: product images
       currentGallery = (product.images && product.images.length) ? product.images.slice() : [];
       renderThumbRail(currentGallery);
-
-      // render swatches and sizes
       renderSwatches(product.variants || []);
 
-      // auto-select first color & size if available
       const firstVariant = (product.variants && product.variants.length) ? product.variants[0] : null;
       if (firstVariant) {
         selectColor(firstVariant.color_name || '');
         selectSize(firstVariant.size || '');
       }
 
-      addToCartBtn.addEventListener('click', addToCart);
+      if (addToCartBtn) addToCartBtn.addEventListener('click', addToCart);
       const goToCartBtn = $('#go-to-cart');
       if (goToCartBtn) goToCartBtn.addEventListener('click', goToCart);
 
@@ -646,7 +582,6 @@
         });
       }
 
-      // keyboard accessibility: left/right arrows cycle thumbs
       document.addEventListener('keydown', (e) => {
         if (!currentGallery || currentGallery.length < 1) return;
         const thumbs = $$('.thumb-item', thumbRail);
@@ -660,11 +595,9 @@
         }
       });
 
-      // Zoom feature
       const mainImageWrap = $('.main-image-wrap');
       if (mainImageWrap && mainImage) {
         let isZoomed = false;
-
         function updateZoom(e) {
           if (!isZoomed) return;
           const rect = mainImageWrap.getBoundingClientRect();
@@ -673,7 +606,6 @@
           mainImage.style.transformOrigin = `${x}% ${y}%`;
           mainImage.style.transform = 'scale(2)';
         }
-
         function toggleZoom(e) {
           isZoomed = !isZoomed;
           if (isZoomed) {
@@ -683,14 +615,12 @@
             resetZoom();
           }
         }
-
         function resetZoom() {
           isZoomed = false;
           mainImageWrap.classList.remove('zoomed');
           mainImage.style.transform = 'scale(1)';
           mainImage.style.transformOrigin = 'center center';
         }
-
         mainImageWrap.addEventListener('mousemove', updateZoom);
         mainImageWrap.addEventListener('click', toggleZoom);
         mainImageWrap.addEventListener('mouseleave', resetZoom);
@@ -698,7 +628,7 @@
 
     } catch (err) {
       console.error(err);
-      productName.textContent = 'Product not found';
+      if (productName) productName.textContent = 'Product not found';
     }
   }
 
