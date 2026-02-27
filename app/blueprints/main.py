@@ -25,7 +25,6 @@ def home():
     # Order by ID desc to show latest products
     all_published_products = Product.query.filter_by(status='published').options(
         joinedload(Product.images),
-        joinedload(Product.reviews),
         joinedload(Product.variants).joinedload(Variant.images)
     ).order_by(Product.id.desc()).all()
 

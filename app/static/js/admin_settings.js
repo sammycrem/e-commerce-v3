@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
       });
       if (res.ok) {
-        alert('Settings saved! Please refresh to see changes across the dashboard.');
+        await alert('Settings saved! Please refresh to see changes across the dashboard.');
         window.location.reload();
       } else {
         const data = await res.json();
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
               const data = await res.json();
               if (res.ok) {
-                  alert(data.message || 'Reset successful. You will be redirected to login.');
+                  await alert(data.message || 'Reset successful. You will be redirected to login.');
                   window.location.href = '/login';
               } else {
                   alert('Error: ' + (data.error || 'Reset failed'));

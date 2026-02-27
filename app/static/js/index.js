@@ -2,16 +2,18 @@
 function getBigUrl(url) {
   if (!url || !url.includes('/static/')) return url;
   const dotIdx = url.lastIndexOf('.');
-  const base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
+  let base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
   if (base.endsWith('_big')) return url;
+  if (base.endsWith('_icon')) base = base.substring(0, base.length - 5);
   return base + '_big.webp';
 }
 
 function getIconUrl(url) {
   if (!url || !url.includes('/static/')) return url;
   const dotIdx = url.lastIndexOf('.');
-  const base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
+  let base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
   if (base.endsWith('_icon')) return url;
+  if (base.endsWith('_big')) base = base.substring(0, base.length - 4);
   return base + '_icon.webp';
 }
 
@@ -119,9 +121,18 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   function renderProducts(products) {
     if (!grid) return;
-    grid.innerHTML = '';
+
+    let target = grid;
+    // If grid is not a row (e.g. on homepage it's a container), wrap in a row for search results
+    if (!grid.classList.contains('row')) {
+        grid.innerHTML = '<div class="row g-4"></div>';
+        target = grid.querySelector('.row');
+    } else {
+        grid.innerHTML = '';
+    }
+
     if (!products.length) {
-        grid.innerHTML = '<div class="col-12 text-center py-5"><h3>No products found</h3><p class="text-muted">Try adjusting your search criteria.</p></div>';
+        target.innerHTML = '<div class="col-12 text-center py-5"><h3>No products found</h3><p class="text-muted">Try adjusting your search criteria.</p></div>';
         return;
     }
     products.forEach(p => {
@@ -158,7 +169,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             </div>
         </div>
       `;
-      grid.appendChild(col);
+      target.appendChild(col);
     });
 
     if (window.updateAllPrices) window.updateAllPrices();
