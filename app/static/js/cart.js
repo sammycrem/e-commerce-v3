@@ -31,10 +31,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const res = await fetch('/api/cart', { credentials: 'same-origin' });
       if (!res.ok) throw new Error('Failed to load cart');
       cartData = await res.json();
-      renderCart();
+      await renderCart();
     } catch (err) {
       console.error('refreshCart error:', err);
-      if (container) container.innerHTML = '<p class="text-danger">Error loading cart.</p>';
+      if (container) container.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading cart.</td></tr>';
     }
   }
 
@@ -64,18 +64,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
   }
 
-  function renderCart() {
+  async function renderCart() {
     if (!container) return;
     container.innerHTML = '';
 
     if (!cartData.items || cartData.items.length === 0) {
       container.innerHTML = `
-        <div class="text-center py-5">
-            <i class="bi bi-cart-x fs-1 text-muted mb-3"></i>
-            <h3>Your cart is empty</h3>
-            <p class="text-muted">Looks like you haven't added anything yet.</p>
-            <a href="/shop" class="btn btn-primary mt-3">Start Shopping</a>
-        </div>
+        <tr>
+            <td colspan="5" class="text-center py-5">
+                <i class="bi bi-cart-x fs-1 text-muted mb-3"></i>
+                <h3>Your cart is empty</h3>
+                <p class="text-muted">Looks like you haven't added anything yet.</p>
+                <a href="/shop" class="btn btn-primary mt-3">Start Shopping</a>
+            </td>
+        </tr>
       `;
       if (summaryEl) summaryEl.classList.add('d-none');
       if (clearCartBtn) clearCartBtn.classList.add('d-none');
@@ -86,38 +88,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (clearCartBtn) clearCartBtn.classList.remove('d-none');
 
     cartData.items.forEach(item => {
-      const row = document.createElement('div');
-      row.className = 'card mb-3 shadow-sm border-0';
+      const row = document.createElement('tr');
       const img = getIconUrl(item.image_url) || '/static/img/placeholder.webp';
 
       row.innerHTML = `
-        <div class="card-body p-3">
-            <div class="row align-items-center g-3">
-                <div class="col-md-2 col-4">
-                    <img src="${img}" class="img-fluid rounded" alt="${item.product_name}">
-                </div>
-                <div class="col-md-4 col-8">
-                    <h5 class="mb-1"><a href="/product/${item.product_sku}" class="text-dark text-decoration-none">${item.product_name}</a></h5>
-                    <div class="text-muted small mb-1">${item.color_name || ''} ${item.size ? ' / ' + item.size : ''}</div>
-                    <div class="text-primary fw-bold product-price" data-base-price-cents="${item.unit_price_cents}">${formatPrice(item.unit_price_cents)}</div>
-                </div>
-                <div class="col-md-3 col-6 text-center">
-                    <div class="quantity-selector mx-auto">
-                        <button class="minus-btn" type="button">-</button>
-                        <input type="text" value="${item.quantity}" readonly>
-                        <button class="plus-btn" type="button">+</button>
-                    </div>
-                </div>
-                <div class="col-md-2 col-4 text-end">
-                    <div class="fw-bold product-price" data-base-price-cents="${item.unit_price_cents * item.quantity}">${formatPrice(item.unit_price_cents * item.quantity)}</div>
-                </div>
-                <div class="col-md-1 col-2 text-end">
-                    <button class="btn btn-sm btn-outline-danger delete-item-btn" type="button">
-                        <i class="bi bi-trash"></i>
-                    </button>
+        <td>
+            <div class="d-flex align-items-center gap-3">
+                <img src="${img}" class="img-fluid rounded" alt="${item.product_name}" style="width: 60px; height: 60px; object-fit: cover;">
+                <div>
+                    <h6 class="mb-0"><a href="/product/${item.product_sku}" class="text-dark text-decoration-none">${item.product_name}</a></h6>
+                    <small class="text-muted">${item.color || ''} ${item.size ? ' / ' + item.size : ''}</small>
                 </div>
             </div>
-        </div>
+        </td>
+        <td>
+            <div class="text-primary fw-bold product-price" data-base-price-cents="${item.unit_price_cents}">${formatPrice(item.unit_price_cents)}</div>
+        </td>
+        <td>
+            <div class="quantity-selector">
+                <button class="minus-btn" type="button">-</button>
+                <input type="text" value="${item.quantity}" readonly style="width: 40px; text-align: center; border: none; background: transparent;">
+                <button class="plus-btn" type="button">+</button>
+            </div>
+        </td>
+        <td>
+            <div class="fw-bold product-price" data-base-price-cents="${item.unit_price_cents * item.quantity}">${formatPrice(item.unit_price_cents * item.quantity)}</div>
+        </td>
+        <td>
+            <button class="btn btn-sm btn-outline-danger delete-item-btn" type="button">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
       `;
 
       row.querySelector('.minus-btn').addEventListener('click', () => updateCartItem(item.sku, item.quantity - 1));
@@ -133,13 +134,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         subtotalEl.dataset.basePriceCents = cartData.subtotal_cents;
         subtotalEl.textContent = formatPrice(cartData.subtotal_cents);
     }
+    const totalEl = document.getElementById('summary-total');
+    if (totalEl) {
+        totalEl.dataset.basePriceCents = cartData.subtotal_cents;
+        totalEl.textContent = formatPrice(cartData.subtotal_cents);
+    }
 
-    if (window.updateAllPrices) window.updateAllPrices();
+    if (window.updateAllPrices) await window.updateAllPrices();
     updateVatLabel();
   }
 
   if (clearCartBtn) {
       clearCartBtn.addEventListener('click', async () => {
+        if (!await confirm('Are you sure you want to clear your cart?')) return;
         const itemsToClear = (cartData.items || []).map(item => updateCartItem(item.sku, 0));
         await Promise.all(itemsToClear);
         await refreshCart();
