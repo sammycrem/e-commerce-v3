@@ -2,11 +2,11 @@
 // Admin Orders UI: list orders, view order detail, update status and shipment via fetch PUT calls.
 // Works for /admin/orders (list) and /admin/orders/<public_order_id> (detail).
 
-(function () {
+(async function () {
   'use strict';
 
   // Helper to create elements quickly
-  function el(tag, attrs = {}, ...children) {
+  async function el(tag, attrs = {}, ...children) {
     const e = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') e.className = attrs[k];
@@ -22,7 +22,7 @@
   }
 
   // Simple toast / snackbar
-  function showToast(message, type = 'info', timeout = 3500) {
+  async function showToast(message, type = 'info', timeout = 3500) {
     let node = document.getElementById('admin-toast');
     if (!node) {
       node = el('div', { id: 'admin-toast' });
@@ -46,14 +46,14 @@
       boxShadow: '0 6px 18px rgba(0,0,0,0.08)'
     });
     node.appendChild(msg);
-    setTimeout(() => {
+    setTimeoutasync (() => {
       msg.remove();
       if (!node.hasChildNodes()) node.remove();
     }, timeout);
   }
 
   // Format cents to currency string (simple)
-  function formatPrice(cents) {
+  async function formatPrice(cents) {
     cents = Number(cents || 0);
     const symbol = (window.appConfig && window.appConfig.currencySymbol) || '€';
     return `${symbol}${(cents / 100).toFixed(2)}`;
@@ -121,7 +121,7 @@
         row.appendChild(left);
         row.appendChild(right);
 
-        row.addEventListener('click', () => {
+        row.addEventListener('click', async () => {
           // Navigate to order detail page - assume route exists /admin/orders/<public_order_id>
           // If your detail page is a SPA panel, you could instead call loadOrderDetails here
           window.location.href = `/admin/orders/${encodeURIComponent(o.public_order_id)}`;
@@ -168,7 +168,7 @@
     }
   }
 
-  function renderOrderDetail(o, container) {
+  async function renderOrderDetail(o, container) {
     container.innerHTML = ''; // clear
 
     // header / basic summary
@@ -268,7 +268,7 @@
 
     // amounts
     const amounts = el('div', { class: 'order-amounts bg-light p-3 rounded' });
-    const addRow = (label, value, isBold = false) => {
+    const addRow = async (label, value, isBold = false) => {
       const row = el('div', { class: `d-flex justify-content-between mb-1 ${isBold ? 'fw-bold h5 mt-2 pt-2 border-top' : ''}` },
         el('span', {}, label),
         el('span', {}, value)
@@ -486,7 +486,7 @@
   // -------------------------------
   // Auto-detect page and init
   // -------------------------------
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     // If orders list element present, render list
     if (document.querySelector('#orders-list')) {
       loadOrdersList('#orders-list');

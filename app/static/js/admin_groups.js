@@ -1,8 +1,8 @@
 // static/js/admin_groups.js
-(function () {
+(async function () {
   'use strict';
 
-  function el(tag, attrs = {}, ...children) {
+  async function el(tag, attrs = {}, ...children) {
     const e = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') e.className = attrs[k];
@@ -18,7 +18,7 @@
 
   function $(sel) { return document.querySelector(sel); }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const groupList = $('#group-list');
     const saveBtn = $('#save-group');
     const delBtn = $('#delete-group');
@@ -81,14 +81,14 @@
         });
     }
 
-    function getIconUrl(url) {
+    async function getIconUrl(url) {
         if (!url) return '/static/img/placeholder.webp';
         const parts = url.split('.');
         const ext = parts.pop();
         return parts.join('.') + '_icon.webp';
     }
 
-    function renderGroupProducts() {
+    async function renderGroupProducts() {
         groupProductsContainer.innerHTML = '';
         if (currentGroupProducts.length === 0) {
             groupProductsContainer.appendChild(el('div', { class: 'text-muted small p-2' }, 'No products in this group.'));
@@ -106,7 +106,7 @@
                 ),
                 el('button', { class: 'btn btn-sm btn-outline-danger', type: 'button' }, 'Remove')
             );
-            item.querySelector('button').onclick = () => {
+            item.querySelector ('button').onclick = () => {
                 currentGroupProducts = currentGroupProducts.filter(x => x.product_sku !== p.product_sku);
                 renderGroupProducts();
             };
@@ -149,11 +149,11 @@
             renderGroupProducts();
             addSkuInput.value = '';
         } else {
-            alert('Product not found with SKU: ' + sku);
+            await alert('Product not found with SKU: ' + sku);
         }
     };
 
-    newBtn.onclick = () => {
+    newBtn.onclick = async () => {
       groupNameInput.value = '';
       groupSlugInput.value = '';
       groupActiveInput.checked = false;
@@ -168,7 +168,7 @@
 
     saveBtn.onclick = async () => {
       const name = groupNameInput.value.trim();
-      if (!name) return alert('Group name is required');
+      if (!name) return await alert('Group name is required');
 
       const id = saveBtn.dataset.id;
       const method = id ? 'PUT' : 'POST';
@@ -197,17 +197,17 @@
         const savedGroup = await res.json();
         await loadGroups();
         loadGroupDetail(savedGroup.id);
-        alert('Group saved successfully');
+        await alert('Group saved successfully');
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to save group');
+        await alert(err.error || 'Failed to save group');
       }
     };
 
     delBtn.onclick = async () => {
       const id = saveBtn.dataset.id;
-      if (!id) return alert('Select a group to delete');
-      if (!confirm('Are you sure you want to delete this group?')) return;
+      if (!id) return await alert('Select a group to delete');
+      if (!await confirm('Are you sure you want to delete this group?')) return;
 
       const headers = {};
       const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -219,7 +219,7 @@
         newBtn.onclick();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to delete group');
+        await alert(err.error || 'Failed to delete group');
       }
     };
 
@@ -227,7 +227,7 @@
     loadAllProducts();
 
     // Refresh products list when products tab might have changed something
-    window.refreshAllGroups = () => {
+    window.refreshAllGroups = async () => {
         loadGroups();
         loadAllProducts();
     };

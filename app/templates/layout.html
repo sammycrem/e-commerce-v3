@@ -205,13 +205,14 @@
         <div id="custom-alert-box">
             <div class="custom-alert-header">
                 <i class="bi bi-info-circle-fill"></i>
-                <span>Message</span>
+                <span id="custom-alert-title">Message</span>
             </div>
             <div class="custom-alert-body" id="custom-alert-message">
                 Alert message goes here.
             </div>
             <div class="custom-alert-footer">
-                <button class="custom-alert-btn" id="custom-alert-close">OK</button>
+                <button class="custom-alert-btn cancel" id="custom-alert-cancel" style="display: none;">Cancel</button>
+                <button class="custom-alert-btn" id="custom-alert-ok">OK</button>
             </div>
         </div>
     </div>

@@ -2,10 +2,10 @@
 // Admin Product CRUD using SKU as identifier
 // Fixed: prefill variant images when editing a product
 
-(function () {
+(async function () {
   'use strict';
 
-  function el(tag, attrs = {}, ...children) {
+  async function el(tag, attrs = {}, ...children) {
     const e = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') e.className = attrs[k];
@@ -23,22 +23,22 @@
   function $all(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
 
   // SKU Helpers
-  function getRandomChar() {
+  async function getRandomChar() {
     const chars = 'abcdefghijklmnopqrstuvwxyz';
     return chars.charAt(Math.floor(Math.random() * chars.length));
   }
 
-  function generateProductSkuSuffix() {
+  async function generateProductSkuSuffix() {
     // _ + letter + 0-9
     return '_' + getRandomChar() + Math.floor(Math.random() * 10);
   }
 
-  function generateVariantSkuSuffix() {
+  async function generateVariantSkuSuffix() {
     // _ + letter + 0-99
     return '_' + getRandomChar() + Math.floor(Math.random() * 100);
   }
 
-  function sanitizeSkuInput(val) {
+  async function sanitizeSkuInput(val) {
     return val.trim().replace(/\s+/g, '_');
   }
 
@@ -48,7 +48,7 @@
     { name: 'Black', modifier: 0.10 }
   ];
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const imagesContainer = $('#product-images');
     const variantsContainer = $('#variants');
     const feedback = $('#admin-feedback');
@@ -67,7 +67,7 @@
     // Export Handlers
     const exportJsonBtn = $('#btn-export-json');
     if (exportJsonBtn) {
-        exportJsonBtn.addEventListener('click', (e) => {
+        exportJsonBtn.addEventListener('click', async () => {
             e.preventDefault();
             window.location.href = '/api/admin/products/export?format=json';
         });
@@ -75,7 +75,7 @@
 
     const exportCsvBtn = $('#btn-export-csv');
     if (exportCsvBtn) {
-        exportCsvBtn.addEventListener('click', (e) => {
+        exportCsvBtn.addEventListener('click', async () => {
             e.preventDefault();
             window.location.href = '/api/admin/products/export?format=csv';
         });
@@ -84,7 +84,7 @@
     // Import Handlers
     const importBtn = $('#btn-import-products');
     if (importBtn && importModal) {
-        importBtn.addEventListener('click', () => {
+        importBtn.addEventListener('click', async () => {
              // Reset form
              const form = $('#importForm');
              if (form) form.reset();
@@ -98,7 +98,7 @@
             const fileInput = $('#importFile');
             const file = fileInput.files[0];
             if (!file) {
-                alert("Please select a file.");
+                await alert("Please select a file.");
                 return;
             }
 
@@ -129,11 +129,11 @@
                     importModal.hide();
                     loadProducts(); // Refresh list
                 } else {
-                    alert(data.error || 'Import failed');
+                    await alert(data.error || 'Import failed');
                 }
             } catch (err) {
                 console.error(err);
-                alert('An error occurred during import.');
+                await alert('An error occurred during import.');
             } finally {
                 confirmImportBtn.disabled = false;
                 confirmImportBtn.textContent = 'Import';
@@ -144,13 +144,13 @@
 
     if (!imagesContainer || !variantsContainer) return;
 
-    function showFeedback(msg, type = 'info') {
+    async function showFeedback(msg, type = 'info') {
       feedback.style.display = 'block';
       feedback.className = `feedback ${type === 'error' ? 'error' : 'success'}`;
       feedback.textContent = msg;
     }
 
-    function parsePriceToCents(str) {
+    async function parsePriceToCents(str) {
       const cleaned = (str || '').replace(',', '.').replace(/[^0-9.]/g, '');
       const val = parseFloat(cleaned);
       return isNaN(val) ? 0 : Math.round(val * 100);
@@ -189,7 +189,7 @@
       fileInput.click();
     }
 
-    function getIconUrl(url) {
+    async function getIconUrl(url) {
       if (!url || !url.includes('/static/')) return url;
       const dotIdx = url.lastIndexOf('.');
       const base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
@@ -198,14 +198,14 @@
     }
 
     // Add product image row
-    function addProductImageRow(url = '', alt = '', order = 0) {
+    async function addProductImageRow(url = '', alt = '', order = 0) {
       const urlInput = el('input', { type: 'text', class: 'form-input img-url', placeholder: 'Image URL', value: url });
       const previewImg = el('img', {
         src: getIconUrl(url) || '/static/img/placeholder_small.webp',
         style: 'width:50px; height:50px; object-fit:cover; border-radius:4px; border:1px solid #eee;'
       });
 
-      urlInput.addEventListener('input', () => {
+      urlInput.addEventListener ('input', () => {
         previewImg.src = getIconUrl(urlInput.value) || '/static/img/placeholder_small.webp';
       });
 
@@ -217,48 +217,12 @@
         el('button', { class: 'btn btn-secondary btn-upload', type: 'button' }, 'Upload'),
         el('button', { class: 'btn btn-danger', type: 'button' }, 'Remove')
       );
-      row.querySelector('.btn-upload').addEventListener('click', () => {
-        triggerUpload(urlInput).then(() => {
+      row.querySelector ('.btn-upload').addEventListener('click', async () => {
+        triggerUpload (urlInput).then(() => {
           previewImg.src = getIconUrl(urlInput.value);
         });
       });
-      row.querySelector('.btn-danger').addEventListener('click', () => row.remove());
-      imagesContainer.appendChild(row);
-    }
-
-    // Add variant row — now supports prefill.images
-    function addVariantRow(prefill = {}) {
-      const wrapper = el('div', { class: 'variant-fields', style: 'border:1px solid #eee; padding:10px; border-radius:6px; margin-bottom:8px;' });
-
-      // Generate variant SKU if not present (using Product SKU base if available)
-      let initialSku = prefill.sku || '';
-      if (!initialSku) {
-         const pSku = $('#product_sku').value.trim() || 'ProductSKU';
-         // Placeholder suffix until saved/updated
-         initialSku = sanitizeSkuInput(pSku) + generateVariantSkuSuffix();
-      }
-
-      const sku = el('input', { type: 'text', class: 'form-input variant-sku', placeholder: 'Variant SKU', value: initialSku });
-
-      const colorListId = 'colors-' + Math.random().toString(36).substr(2, 9);
-      const colorDatalist = el('datalist', { id: colorListId });
-      PREDEFINED_COLORS.forEach(c => colorDatalist.appendChild(el('option', { value: c.name })));
-
-      const color = el('input', { type: 'text', class: 'form-input variant-color', placeholder: 'Color (e.g. Red)', value: prefill.color_name || '', list: colorListId });
-      const size = el('input', { type: 'text', class: 'form-input variant-size', placeholder: 'Size (e.g. M)', value: prefill.size || '' });
-      const stock = el('input', { type: 'number', class: 'form-input variant-stock', placeholder: 'Stock', value: prefill.stock_quantity || 0 });
-      const priceMod = el('input', { type: 'text', class: 'form-input variant-price-mod', placeholder: 'Price modifier (e.g. 1.50)', value: prefill.price_modifier_cents ? (prefill.price_modifier_cents / 100).toFixed(2) : '0.00' });
-
-      const finalPriceDisplay = el('div', { class: 'mt-1 small fw-bold text-primary variant-final-price' }, `Final Price: 0.00 ${window.appConfig.currencySymbol}`);
-
-      function updateFinalPrice() {
-        const base = parsePriceToCents($('#base_price').value);
-        const mod = parsePriceToCents(priceMod.value);
-        finalPriceDisplay.textContent = `Final Price: ${((base + mod) / 100).toFixed(2)} ${window.appConfig.currencySymbol}`;
-      }
-
-      priceMod.addEventListener('input', updateFinalPrice);
-      color.addEventListener('change', () => {
+      row.querySelector('.btn-danger').addEventListener('click', async () => {
         const selected = PREDEFINED_COLORS.find(c => c.name.toLowerCase() === color.value.toLowerCase());
         if (selected) {
           const base = parsePriceToCents($('#base_price').value);
@@ -274,14 +238,14 @@
       const vImgs = el('div', { class: 'variant-images' });
 
       // function to add one variant-image row (used for both prefill and "Add image" button)
-      function addVariantImageRow(url = '', alt = '', order = 0) {
+      async function addVariantImageRow(url = '', alt = '', order = 0) {
         const vUrlInput = el('input', { type: 'text', class: 'form-input img-url', placeholder: 'Image URL', value: url });
         const vPreviewImg = el('img', {
           src: getIconUrl(url) || '/static/img/placeholder_small.webp',
           style: 'width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid #eee;'
         });
 
-        vUrlInput.addEventListener('input', () => {
+        vUrlInput.addEventListener ('input', () => {
           vPreviewImg.src = getIconUrl(vUrlInput.value) || '/static/img/placeholder_small.webp';
         });
 
@@ -293,58 +257,12 @@
           el('button', { class: 'btn btn-secondary btn-upload', type: 'button' }, 'Upload'),
           el('button', { class: 'btn btn-danger', type: 'button' }, 'Remove')
         );
-        r.querySelector('.btn-upload').addEventListener('click', () => {
-          triggerUpload(vUrlInput).then(() => {
+        r.querySelector ('.btn-upload').addEventListener('click', async () => {
+          triggerUpload (vUrlInput).then(() => {
             vPreviewImg.src = getIconUrl(vUrlInput.value);
           });
         });
-        r.querySelector('.btn-danger').addEventListener('click', () => r.remove());
-        vImgs.appendChild(r);
-      }
-
-      // If prefill contains images, render them
-      if (Array.isArray(prefill.images) && prefill.images.length) {
-        prefill.images.forEach(img => {
-          const url = img.url || '';
-          const alt = img.alt_text || img.alt || '';
-          const order = img.display_order != null ? img.display_order : (img.order != null ? img.order : 0);
-          addVariantImageRow(url, alt, order);
-        });
-      }
-
-      // "Add variant image" button
-      const addImg = el('button', { class: 'btn btn-outline-primary', type: 'button', style: 'margin-right: 8px;' }, 'Add Variant Image');
-      addImg.addEventListener('click', () => addVariantImageRow());
-
-      // Store the suffix in a data attribute to preserve it during updates
-      // Try to extract existing suffix if possible
-      let currentSuffix = generateVariantSkuSuffix();
-      const parts = initialSku.split('_');
-      // Simple heuristic: if last part matches suffix pattern (letter + number)
-      if (parts.length > 1) {
-          const last = parts[parts.length-1];
-          if (/^[a-z]\d+$/.test(last)) {
-              currentSuffix = '_' + last;
-          }
-      }
-      wrapper.dataset.skuSuffix = currentSuffix;
-
-      // Update SKU on Color/Size Change
-      function updateVariantSku() {
-          const pSku = sanitizeSkuInput($('#product_sku').value.trim() || 'ProductSKU');
-          const cVal = sanitizeSkuInput(color.value.trim() || 'Color');
-          const sVal = sanitizeSkuInput(size.value.trim() || 'Size');
-          // Format: ProductSKU_Color_Size_Suffix
-          sku.value = `${pSku}_${cVal}_${sVal}${wrapper.dataset.skuSuffix}`;
-      }
-
-      color.addEventListener('input', updateVariantSku);
-      size.addEventListener('input', updateVariantSku);
-      // Also listen to Product SKU changes? Ideally yes, but tricky to wire up globally to all rows.
-      // We'll update all variants on Save.
-
-      const duplicateBtn = el('button', { class: 'btn btn-outline-primary', type: 'button', style: 'margin-right: 8px;' }, 'Duplicate');
-      duplicateBtn.addEventListener('click', () => {
+        r.querySelector('.btn-danger').addEventListener('click', async () => {
         // Generate NEW suffix for duplicate
         const newSuffix = generateVariantSkuSuffix();
 
@@ -380,31 +298,7 @@
       });
 
       const removeBtn = el('button', { class: 'btn btn-danger', type: 'button' }, 'Remove Variant');
-      removeBtn.addEventListener('click', () => wrapper.remove());
-
-      // assemble wrapper
-      wrapper.appendChild(el('label', {}, 'Variant SKU')); wrapper.appendChild(sku);
-      wrapper.appendChild(el('label', {}, 'Color')); wrapper.appendChild(color);
-      wrapper.appendChild(el('label', {}, 'Size')); wrapper.appendChild(size);
-      wrapper.appendChild(el('label', {}, 'Stock quantity')); wrapper.appendChild(stock);
-      wrapper.appendChild(el('label', {}, `Price modifier (${window.appConfig.currencySymbol})`)); wrapper.appendChild(priceMod);
-      wrapper.appendChild(finalPriceDisplay);
-      wrapper.appendChild(colorDatalist);
-      wrapper.appendChild(vImgs);
-      wrapper.appendChild(addImg);
-      wrapper.appendChild(duplicateBtn);
-      wrapper.appendChild(removeBtn);
-
-      variantsContainer.appendChild(wrapper);
-    }
-
-    $('#add-product-image').addEventListener('click', () => addProductImageRow());
-    $('#add-variant').addEventListener('click', () => addVariantRow());
-
-    addProductImageRow();
-    addVariantRow();
-
-    $('#base_price').addEventListener('input', () => {
+      removeBtn.addEventListener('click', async () => {
       $all('.variant-fields').forEach(v => {
         const pm = v.querySelector('.variant-price-mod');
         const display = v.querySelector('.variant-final-price');
@@ -447,10 +341,10 @@
             style: 'margin-left: 8px; cursor: pointer; font-size: 1.1em;',
             title: 'Copy SKU'
         });
-        copyIcon.addEventListener('click', (e) => {
+        copyIcon.addEventListener('click', async () => {
             e.stopPropagation();
             if (navigator.clipboard) {
-                navigator.clipboard.writeText(p.product_sku).then(() => {
+                navigator.clipboard.writeText (p.product_sku).then(() => {
                     copyIcon.className = 'fas fa-check text-success';
                     setTimeout(() => copyIcon.className = 'fas fa-copy text-muted', 1000);
                 });
@@ -466,58 +360,7 @@
                 document.createTextNode(` - ${p.status}`)
             )
         );
-        item.addEventListener('click', () => loadProduct(p.product_sku));
-        productList.appendChild(item);
-      });
-    }
-
-    if ($('#product-filter-status')) {
-        $('#product-filter-status').addEventListener('change', loadProducts);
-    }
-    if ($('#product-filter-category')) {
-        $('#product-filter-category').addEventListener('change', loadProducts);
-    }
-
-    // Load single product by SKU
-    async function loadProduct(sku) {
-      const res = await fetch(`/api/admin/products/${encodeURIComponent(sku)}`);
-      if (!res.ok) return showFeedback(`Failed to load product ${sku}`, 'error');
-      const p = await res.json();
-      $('#product_sku').value = p.product_sku;
-      $('#name').value = p.name;
-      $('#slug').value = p.slug || '';
-      $('#meta_title').value = p.meta_title || '';
-      $('#meta_description').value = p.meta_description || '';
-      const catSelect = $('#category');
-      if (catSelect) {
-        catSelect.dataset.pendingValue = p.category;
-        catSelect.value = p.category;
-      }
-      $('#base_price').value = (p.base_price_cents / 100).toFixed(2);
-      $('#message').value = p.message || '';
-      $('#status').value = p.status || 'draft';
-      $('#description').value = p.description || '';
-      $('#short_description').value = p.short_description || '';
-      $('#product_details').value = p.product_details || '';
-      $('#related_products').value = (p.related_products || []).join(', ');
-      $('#proposed_products').value = (p.proposed_products || []).join(', ');
-      $('#tag1').value = p.tag1 || '';
-      $('#tag2').value = p.tag2 || '';
-      $('#tag3').value = p.tag3 || '';
-      $('#weight_grams').value = p.weight_grams || 0;
-      $('#length').value = p.dimensions_json?.length || 0;
-      $('#width').value = p.dimensions_json?.width || 0;
-      $('#height').value = p.dimensions_json?.height || 0;
-      imagesContainer.innerHTML = '';
-      (p.images || []).forEach(img => addProductImageRow(img.url, img.alt_text || img.alt || '', img.display_order || img.order || 0));
-      variantsContainer.innerHTML = '';
-      (p.variants || []).forEach(v => addVariantRow(v));
-      saveBtn.dataset.editSku = p.product_sku; // store SKU
-      showFeedback(`Loaded product ${p.name}`);
-    }
-
-    // Update Product SKU on blur (New Product)
-    $('#product_sku').addEventListener('blur', () => {
+        item.addEventListener('click', async () => {
         const val = $('#product_sku').value.trim();
         if (val) {
             let newVal = sanitizeSkuInput(val);
@@ -651,7 +494,7 @@
     });
 
     // Duplicate Product
-    $('#btn-duplicate-product').addEventListener('click', () => {
+    $ ('#btn-duplicate-product').addEventListener('click', async () => {
         const editSku = saveBtn.dataset.editSku;
         if (!editSku) {
             showFeedback('Load a product first to duplicate', 'error');
@@ -710,7 +553,7 @@
           msg = 'PERMANENTLY DELETE this product? This will remove it from the database entirely.\n\nNote: Products used in past orders cannot be deleted.';
       }
 
-      if (!confirm(msg)) return;
+      if (!await confirm(msg)) return;
 
       const headers = {};
       const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -731,7 +574,7 @@
       } else {
           // If 409 Conflict (Used in order), show specific error
           if (res.status === 409) {
-              alert("Error: " + (data.error || "Cannot delete product used in orders."));
+              await alert("Error: " + (data.error || "Cannot delete product used in orders."));
               showFeedback('Deletion blocked', 'error');
           } else {
               showFeedback(data.error || 'Delete failed', 'error');
@@ -740,7 +583,7 @@
     });
 
     // New product button
-    if (newBtn) newBtn.addEventListener('click', () => {
+    if (newBtn) newBtn.addEventListener('click', async () => {
       ['product_sku', 'name', 'slug', 'meta_title', 'meta_description', 'category', 'base_price', 'message', 'description', 'short_description', 'product_details', 'related_products', 'proposed_products', 'tag1', 'tag2', 'tag3', 'weight_grams', 'length', 'width', 'height'].forEach(id => $(`#${id}`).value = '');
       $('#status').value = 'draft';
       imagesContainer.innerHTML = '';
@@ -763,7 +606,7 @@
       }
     }
 
-    function updateCategorySelect(categories) {
+    async function updateCategorySelect(categories) {
       // Editor Dropdown
       const categorySelect = $('#category');
       if (categorySelect) {

@@ -2,7 +2,7 @@
 // New gallery: vertical thumb rail, swatch thumbnails, size buttons, dynamic price update.
 // Outline for selected thumb/swatch: rgb(17, 24, 39) solid 3px
 
-(() => {
+async (() => {
   const SKU = window.PRODUCT_SKU;
   if (!SKU) return;
 
@@ -11,12 +11,12 @@
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const formatPrice = cents => `${window.appConfig.currencySymbol}${(cents/100).toFixed(2)}`;
 
-  function getCsrfToken() {
+  async function getCsrfToken() {
     const meta = document.querySelector('meta[name="csrf-token"]');
     return meta ? meta.content : '';
   }
 
-  function getIconUrl(url) {
+  async function getIconUrl(url) {
     if (!url || !url.includes('/static/')) return url;
     const dotIdx = url.lastIndexOf('.');
     const base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
@@ -39,7 +39,7 @@
   const nextBtn = $('#next-image');
 
   // New helper for product cards
-  function createProductCard(p) {
+  async function createProductCard(p) {
     const col = document.createElement('div');
     col.className = 'col';
     const firstImg = (p.images && p.images[0]) ? getIconUrl(p.images[0].url) : '/static/img/placeholder.webp';
@@ -93,7 +93,7 @@
     }
   }
 
-  function renderCartSidebar(data) {
+  async function renderCartSidebar(data) {
     const container = $('#sidebar-cart-list');
     if (!container) return;
     container.innerHTML = '';
@@ -133,53 +133,7 @@
       const minusBtn = $('.minus', div);
       const plusBtn = $('.plus', div);
 
-      minusBtn.addEventListener('click', () => updateCartItem(item.sku, item.quantity - 1));
-      plusBtn.addEventListener('click', () => updateCartItem(item.sku, item.quantity + 1));
-
-      container.appendChild(div);
-    });
-
-    const totalEl = $('#sidebar-total');
-    if (totalEl) {
-        totalEl.classList.add('product-price');
-        totalEl.dataset.basePriceCents = data.subtotal_cents || 0;
-        totalEl.textContent = formatPrice(data.subtotal_cents || 0);
-    }
-
-    // Trigger price update if logic available
-    if (window.updateAllPrices) window.updateAllPrices();
-  }
-
-  async function updateCartItem(sku, quantity) {
-    try {
-      const res = await fetch('/api/cart', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCsrfToken()
-        },
-        body: JSON.stringify({ sku, quantity: Math.max(0, quantity) })
-      });
-      if (res.ok) {
-        await refreshCartSidebar();
-      }
-    } catch (err) {
-      console.error('updateCartItem error:', err);
-    }
-  }
-
-  function goToCart() {
-    window.location.href = '/cart';
-  }
-
-  function renderTags(p) {
-    const container = $('#product-tags');
-    if (!container) return;
-    container.innerHTML = '';
-    const tags = [p.tag1, p.tag2, p.tag3].filter(t => t && t.trim());
-    const colors = ['bg-primary', 'bg-info', 'bg-dark'];
-    tags.forEach((tag, i) => {
+      minusBtn.addEventListener('click', async () => {
         const badge = document.createElement('span');
         badge.className = `badge tag-badge ${colors[i % colors.length]}`;
         badge.textContent = tag;
@@ -188,7 +142,7 @@
   }
 
   // --- REVIEWS LOGIC ---
-  function renderReviews(reviews) {
+  async function renderReviews(reviews) {
     const list = $('#reviews-list');
     if (!list) return;
     list.innerHTML = '';
@@ -213,7 +167,7 @@
     });
   }
 
-  function setupReviewForm() {
+  async function setupReviewForm() {
     const form = $('#review-form');
     if (!form) return;
 
@@ -223,7 +177,7 @@
     const ratingInput = $('#rating-value');
 
     stars.forEach(star => {
-        star.addEventListener('click', () => {
+        star.addEventListener('click', async () => {
             const val = parseInt(star.dataset.value);
             ratingInput.value = val;
             stars.forEach(s => {
@@ -260,7 +214,7 @@
     const editBtn = $('#edit-review-btn');
     const formContainer = $('#review-form-container');
     if (editBtn && formContainer) {
-        editBtn.addEventListener('click', () => {
+        editBtn.addEventListener('click', async () => {
             formContainer.classList.toggle('d-none');
             if (!formContainer.classList.contains('d-none')) {
                 // Scroll to form
@@ -305,7 +259,7 @@
 
                 if (currentMethod === 'PUT') {
                     // Update mode specific
-                    setTimeout(() => {
+                    setTimeoutasync (() => {
                         feedback.textContent = '';
                         // Optionally hide form again
                         if(formContainer) formContainer.classList.add('d-none');
@@ -358,7 +312,7 @@
   const SELECTED_OUTLINE_STYLE = 'selected-outline';
 
   // create thumb DOM element
-  function createThumb(imgObj, index) {
+  async function createThumb(imgObj, index) {
     const wrapper = document.createElement('div');
     wrapper.className = 'thumb-item';
     wrapper.tabIndex = 0;
@@ -368,33 +322,33 @@
     img.loading = 'lazy';
     wrapper.appendChild(img);
 
-    wrapper.addEventListener('click', () => {
+    wrapper.addEventListener('click', async () => {
       setActiveImage(index);
     });
-    wrapper.addEventListener('mouseenter', () => {
+    wrapper.addEventListener ('mouseenter', () => {
       setActiveImage(index);
     });
-    wrapper.addEventListener('keydown', (e) => {
+    wrapper.addEventListener ('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveImage(index); }
     });
 
     return wrapper;
   }
 
-  function setActiveImage(index) {
+  async function setActiveImage(index) {
     const g = currentGallery;
     const img = g[index] || g[0];
     if (!img) return;
     mainImage.src = img.url;
     mainImage.alt = img.alt_text || product.name || '';
     // mark selected thumb
-    $$('.thumb-item', thumbRail).forEach((t, i) => {
+    $$ ('.thumb-item', thumbRail).forEach((t, i) => {
       if (i === index) t.classList.add(SELECTED_OUTLINE_STYLE); else t.classList.remove(SELECTED_OUTLINE_STYLE);
     });
   }
 
   // Render vertical thumb rail from images array
-  function renderThumbRail(images) {
+  async function renderThumbRail(images) {
     thumbRail.innerHTML = '';
     if (!images || images.length === 0) {
       thumbRail.style.display = 'none';
@@ -406,14 +360,14 @@
 
     if (prevBtn) prevBtn.style.display = images.length > 1 ? '' : 'none';
     if (nextBtn) nextBtn.style.display = images.length > 1 ? '' : 'none';
-    images.forEach((img, idx) => {
+    images.forEachasync ((img, idx) => {
       const t = createThumb(img, idx);
       thumbRail.appendChild(t);
     });
     setActiveImage(0);
   }
 
-  function renderSwatches(variants) {
+  async function renderSwatches(variants) {
     swatchGrid.innerHTML = '';
     // Group variants by color_name; first variant of color used for swatch image
     const colorMap = new Map();
@@ -435,7 +389,7 @@
       swatch.dataset.color = color;
       swatch.title = color;
       swatch.innerHTML = `<img src="${swatchImg}" alt="${color}" loading="lazy"><div class="swatch-label">${color}</div>`;
-      swatch.addEventListener('click', () => {
+      swatch.addEventListener('click', async () => {
         selectColor(color);
       });
       swatchGrid.appendChild(swatch);
@@ -444,7 +398,7 @@
     // If only one color, optionally hide label - that's up to styling.
   }
 
-  function renderSizes(variants_for_color) {
+  async function renderSizes(variants_for_color) {
     sizeButtons.innerHTML = '';
     const sizes = []; // unique
     (variants_for_color || []).forEach(v => {
@@ -458,14 +412,14 @@
       btn.className = 'size-btn';
       btn.textContent = sz;
       btn.dataset.size = sz;
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         selectSize(sz);
       });
       sizeButtons.appendChild(btn);
     });
   }
 
-  function selectColor(color) {
+  async function selectColor(color) {
     selectedColor = color;
     // mark active swatch
     $$('.swatch', swatchGrid).forEach(s => s.classList.toggle(SELECTED_OUTLINE_STYLE, s.dataset.color === color));
@@ -481,13 +435,13 @@
     updateSelectedVariantBy(color, selectedSize);
   }
 
-  function selectSize(size) {
+  async function selectSize(size) {
     selectedSize = size;
     $$('.size-btn', sizeButtons).forEach(b => b.classList.toggle('active', b.dataset.size === size));
     updateSelectedVariantBy(selectedColor, selectedSize);
   }
 
-  function updateSelectedVariantBy(color, size) {
+  async function updateSelectedVariantBy(color, size) {
     const variant = product.variants.find(v =>
       ((v.color_name || '').trim() === (color || '').trim()) &&
       ((v.size || '').trim() === (size || '').trim())
@@ -526,7 +480,10 @@
   }
 
   async function addToCart() {
-    if (!selectedVariant) return alert('Please select a variant (color + size).');
+    if (!selectedVariant) {
+        await alert('Please select a variant (color + size).');
+        return;
+    }
     const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
     const payload = { sku: selectedVariant.sku, quantity: qty };
     try {
@@ -541,7 +498,7 @@
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Failed to add to cart');
+        await alert(data.error || 'Failed to add to cart');
       } else {
         addToCartBtn.textContent = 'Added ✓';
         setTimeout(()=> addToCartBtn.textContent = 'Add to cart', 1500);
@@ -549,7 +506,7 @@
       }
     } catch (err) {
       console.error(err);
-      alert('Network error when adding to cart');
+      await alert('Network error when adding to cart');
     }
   }
 
@@ -624,7 +581,7 @@
       if (goToCartBtn) goToCartBtn.addEventListener('click', goToCart);
 
       if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
+        prevBtn.addEventListener ('click', () => {
           if (!currentGallery || currentGallery.length < 2) return;
           const thumbs = $$('.thumb-item', thumbRail);
           const activeIndex = thumbs.findIndex(t => t.classList.contains(SELECTED_OUTLINE_STYLE));
@@ -634,7 +591,7 @@
       }
 
       if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
+        nextBtn.addEventListener ('click', () => {
           if (!currentGallery || currentGallery.length < 2) return;
           const thumbs = $$('.thumb-item', thumbRail);
           const activeIndex = thumbs.findIndex(t => t.classList.contains(SELECTED_OUTLINE_STYLE));
@@ -644,7 +601,7 @@
       }
 
       // keyboard accessibility: left/right arrows cycle thumbs
-      document.addEventListener('keydown', (e) => {
+      document.addEventListener ('keydown', (e) => {
         if (!currentGallery || currentGallery.length < 1) return;
         const thumbs = $$('.thumb-item', thumbRail);
         const activeIndex = thumbs.findIndex(t => t.classList.contains(SELECTED_OUTLINE_STYLE));
@@ -662,7 +619,7 @@
       if (mainImageWrap && mainImage) {
         let isZoomed = false;
 
-        function updateZoom(e) {
+        async function updateZoom(e) {
           if (!isZoomed) return;
           const rect = mainImageWrap.getBoundingClientRect();
           const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -671,7 +628,7 @@
           mainImage.style.transform = 'scale(2)';
         }
 
-        function toggleZoom(e) {
+        async function toggleZoom(e) {
           isZoomed = !isZoomed;
           if (isZoomed) {
             mainImageWrap.classList.add('zoomed');
@@ -681,7 +638,7 @@
           }
         }
 
-        function resetZoom() {
+        async function resetZoom() {
           isZoomed = false;
           mainImageWrap.classList.remove('zoomed');
           mainImage.style.transform = 'scale(1)';

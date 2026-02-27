@@ -1,8 +1,8 @@
 // static/js/pricing.js
-(function() {
+(async function() {
     'use strict';
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         const vatToggle = document.getElementById('vat-toggle');
         const shipToContainer = document.getElementById('ship-to-container');
         const shipToSelect = document.getElementById('ship-to-select');
@@ -18,7 +18,7 @@
 
         // 2. Event Listeners
         if (vatToggle) {
-            vatToggle.addEventListener('change', () => {
+            vatToggle.addEventListener ('change', () => {
                 const isChecked = vatToggle.checked;
                 localStorage.setItem('show_vat', isChecked);
                 handleVatVisibility(isChecked);
@@ -27,7 +27,7 @@
         }
 
         if (shipToSelect) {
-            shipToSelect.addEventListener('change', () => {
+            shipToSelect.addEventListener ('change', () => {
                 const val = shipToSelect.value;
                 if (val) localStorage.setItem('selected_country_id', val);
                 else localStorage.removeItem('selected_country_id');
@@ -61,7 +61,7 @@
             updatePrices();
         }
 
-        function handleVatVisibility(showVat) {
+        async function handleVatVisibility(showVat) {
             const mode = window.appConfig.vatMode || 'SHIPPING_ADDRESS';
             if (mode === 'SHIPPING_ADDRESS' && shipToContainer) {
                 // Show Ship To only if we care about VAT?
@@ -94,7 +94,7 @@
             }
         }
 
-        function getEffectiveVatRate() {
+        async function getEffectiveVatRate() {
             const mode = window.appConfig.vatMode || 'SHIPPING_ADDRESS';
 
             if (mode === 'DEFAULT_COUNTRY') {
@@ -110,7 +110,7 @@
             }
         }
 
-        function updatePrices() {
+        async function updatePrices() {
             const showVat = vatToggle ? vatToggle.checked : false;
             const rate = getEffectiveVatRate();
             const symbol = window.appConfig.currencySymbol || '€';
@@ -140,7 +140,7 @@
         window.updateAllPrices = updatePrices;
 
         // Export for other scripts if needed (e.g., product page variant updates)
-        window.calculateDisplayPrice = function(baseCents) {
+        window.calculateDisplayPrice = async function(baseCents) {
              const showVat = vatToggle ? vatToggle.checked : false;
              const rate = getEffectiveVatRate();
              const symbol = window.appConfig.currencySymbol || '€';

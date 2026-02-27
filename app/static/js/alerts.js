@@ -3,46 +3,82 @@
     'use strict';
 
     const overlay = document.getElementById('custom-alert-overlay');
+    const titleEl = document.getElementById('custom-alert-title');
     const messageEl = document.getElementById('custom-alert-message');
-    const closeBtn = document.getElementById('custom-alert-close');
+    const okBtn = document.getElementById('custom-alert-ok');
+    const cancelBtn = document.getElementById('custom-alert-cancel');
 
-    if (!overlay || !messageEl || !closeBtn) return;
+    if (!overlay || !messageEl || !okBtn || !cancelBtn) return;
 
     let resolveActiveAlert = null;
 
-    function closeAlert() {
+    function closeAlert(value) {
         overlay.classList.remove('show');
         if (resolveActiveAlert) {
-            resolveActiveAlert();
+            const resolve = resolveActiveAlert;
             resolveActiveAlert = null;
+            resolve(value);
         }
     }
 
-    // Override the global alert function
-    window.alert = function(message) {
-        messageEl.textContent = message;
-        overlay.classList.add('show');
-
+    window.customAlert = function(message, title = 'Message') {
         return new Promise((resolve) => {
             resolveActiveAlert = resolve;
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            cancelBtn.style.display = 'none';
+            okBtn.textContent = 'OK';
+            overlay.classList.add('show');
         });
     };
 
-    closeBtn.addEventListener('click', () => {
-        closeAlert();
+    window.customConfirm = function(message, title = 'Confirmation') {
+        return new Promise((resolve) => {
+            resolveActiveAlert = resolve;
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            cancelBtn.style.display = 'inline-block';
+            okBtn.textContent = 'OK';
+            overlay.classList.add('show');
+        });
+    };
+
+    // Override the global alert function
+    window.alert = function(message) {
+        return window.customAlert(message);
+    };
+
+    // Override the global confirm function
+    window.confirm = function(message) {
+        return window.customConfirm(message);
+    };
+
+    okBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAlert(true);
     });
 
-    // Also close on overlay click
+    cancelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAlert(false);
+    });
+
+    // Close on overlay click (defaults to cancel/false)
     overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
-            closeAlert();
+            closeAlert(false);
         }
     });
 
     // Handle Escape key
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && overlay.classList.contains('show')) {
-            closeAlert();
+            closeAlert(false);
+        }
+        if (e.key === 'Enter' && overlay.classList.contains('show')) {
+            closeAlert(true);
         }
     });
 })();

@@ -1,9 +1,9 @@
-(function() {
+(async function() {
     'use strict';
 
     function $(sel, root = document) { return root.querySelector(sel); }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         const btnGenerate = $('#btn-generate-report');
         const btnExport = $('#btn-export-report');
         const reportType = $('#report-type');
@@ -18,7 +18,7 @@
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         // Correctly format to YYYY-MM-DD using local time part
-        const formatDate = (d) => {
+        const formatDate = async (d) => {
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
@@ -55,7 +55,7 @@
             }
         }
 
-        function exportReport() {
+        async function exportReport() {
             const type = reportType.value;
             const start = reportStart.value;
             const end = reportEnd.value;
@@ -69,7 +69,7 @@
             window.location.href = url.toString();
         }
 
-        function renderTable(type, data) {
+        async function renderTable(type, data) {
             if (!data || data.length === 0) {
                 reportResults.innerHTML = '<p class="text-center py-5">No data found for the selected period.</p>';
                 return;
@@ -80,11 +80,11 @@
 
             const currencySymbol = window.appConfig?.currencySymbol || '€';
 
-            function formatMoney(cents) {
+            async function formatMoney(cents) {
                 return currencySymbol + ' ' + (cents / 100).toFixed(2);
             }
 
-            function escapeHtml(text) {
+            async function escapeHtml(text) {
                 if (text == null) return '';
                 return String(text)
                     .replace(/&/g, "&amp;")
@@ -135,7 +135,7 @@
             }
 
             let html = '<table class="table table-striped table-hover sortable"><thead><tr>';
-            headers.forEach((h, idx) => {
+            headers.forEachasync ((h, idx) => {
                 html += `<th data-col="${idx}" style="cursor:pointer;">${h} <i class="fas fa-sort text-muted small"></i></th>`;
             });
             html += '</tr></thead><tbody>';
@@ -152,12 +152,12 @@
             makeSortable(reportResults.querySelector('table'));
         }
 
-        function makeSortable(table) {
+        async function makeSortable(table) {
             const headers = table.querySelectorAll('th');
             const tbody = table.querySelector('tbody');
 
             headers.forEach(th => {
-                th.addEventListener('click', () => {
+                th.addEventListener ('click', () => {
                     const colIdx = parseInt(th.dataset.col);
                     const rows = Array.from(tbody.querySelectorAll('tr'));
                     const isAsc = th.dataset.order === 'asc';
@@ -169,7 +169,7 @@
                     headers.forEach(h => h.querySelector('i').className = 'fas fa-sort text-muted small');
                     th.querySelector('i').className = `fas fa-sort-${isAsc ? 'down' : 'up'}`;
 
-                    rows.sort((a, b) => {
+                    rows.sortasync ((a, b) => {
                         const cellA = a.children[colIdx].innerText;
                         const cellB = b.children[colIdx].innerText;
 

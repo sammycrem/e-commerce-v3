@@ -1,5 +1,5 @@
 // index.js - loads product list and injects into #product-grid
-function getBigUrl(url) {
+async function getBigUrl(url) {
   if (!url || !url.includes('/static/')) return url;
   const dotIdx = url.lastIndexOf('.');
   let base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
@@ -8,7 +8,7 @@ function getBigUrl(url) {
   return base + '_big.webp';
 }
 
-function getIconUrl(url) {
+async function getIconUrl(url) {
   if (!url || !url.includes('/static/')) return url;
   const dotIdx = url.lastIndexOf('.');
   let base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
@@ -119,7 +119,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
   }
 
-  function renderProducts(products) {
+  async function renderProducts(products) {
     if (!grid) return;
 
     let target = grid;
@@ -175,7 +175,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (window.updateAllPrices) window.updateAllPrices();
   }
 
-  function renderStars(rating) {
+  async function renderStars(rating) {
       let stars = '';
       for (let i = 1; i <= 5; i++) {
           if (rating >= i) stars += '<i class="bi bi-star-fill small"></i>';
@@ -187,7 +187,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Search Handler
   if (searchForm) {
-      searchForm.addEventListener('submit', (e) => {
+      searchForm.addEventListener ('submit', (e) => {
           if (grid) {
               e.preventDefault();
               const category = categorySelect ? categorySelect.value : '';
@@ -200,7 +200,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Auto-filter on category select
   if (categorySelect) {
-      categorySelect.addEventListener('change', () => {
+      categorySelect.addEventListener ('change', () => {
           const val = categorySelect.value;
           const q = searchInput ? searchInput.value.trim() : '';
 

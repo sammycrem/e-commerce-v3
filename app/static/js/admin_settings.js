@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const activeCurrencySelect = document.getElementById('active-currency-select');
   const saveSettingsBtn = document.getElementById('save-settings');
   const newCurrencySymbol = document.getElementById('new-currency-symbol');
@@ -97,10 +97,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
       } else {
         const data = await res.json();
-        alert('Error: ' + data.error);
+        await alert('Error: ' + data.error);
       }
     } catch (err) {
-      alert('Failed to save settings');
+      await alert('Failed to save settings');
     }
   };
 
@@ -122,15 +122,15 @@ document.addEventListener('DOMContentLoaded', () => {
         loadSettings();
       } else {
         const data = await res.json();
-        alert('Error: ' + data.error);
+        await alert('Error: ' + data.error);
       }
     } catch (err) {
-      alert('Failed to add currency');
+      await alert('Failed to add currency');
     }
   };
 
   async function deleteCurrency(id) {
-    if (!confirm('Are you sure?')) return;
+    if (!await confirm('Are you sure?')) return;
     try {
       const headers = {};
       const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -144,10 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
         loadSettings();
       } else {
         const data = await res.json();
-        alert('Error: ' + data.error);
+        await alert('Error: ' + data.error);
       }
     } catch (err) {
-      alert('Failed to delete currency');
+      await alert('Failed to delete currency');
     }
   }
 
@@ -157,16 +157,16 @@ document.addEventListener('DOMContentLoaded', () => {
       factoryResetBtn.onclick = async () => {
           const code = document.getElementById('reset_code').value.trim();
           if (!code) {
-              alert("Please enter the reset code.");
+              await alert("Please enter the reset code.");
               return;
           }
 
-          if (!confirm("DANGER: This will delete ALL data (products, orders, users, etc.) and reset the application to its initial state. This action cannot be undone.\n\nAre you sure you want to proceed?")) {
+          if (!await confirm("DANGER: This will delete ALL data (products, orders, users, etc.) and reset the application to its initial state. This action cannot be undone.\n\nAre you sure you want to proceed?")) {
               return;
           }
 
           // Double confirmation
-          if (!confirm("Are you REALLY sure? Last warning.")) {
+          if (!await confirm("Are you REALLY sure? Last warning.")) {
               return;
           }
 
@@ -186,11 +186,11 @@ document.addEventListener('DOMContentLoaded', () => {
                   await alert(data.message || 'Reset successful. You will be redirected to login.');
                   window.location.href = '/login';
               } else {
-                  alert('Error: ' + (data.error || 'Reset failed'));
+                  await alert('Error: ' + (data.error || 'Reset failed'));
               }
           } catch (err) {
               console.error(err);
-              alert('An unexpected error occurred.');
+              await alert('An unexpected error occurred.');
           }
       };
   }

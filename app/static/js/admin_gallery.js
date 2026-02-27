@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const galleryGrid = document.getElementById('gallery-grid');
     const galleryFilter = document.getElementById('gallery-filter');
     const refreshBtn = document.getElementById('btn-refresh-gallery');
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderGallery() {
+    async function renderGallery() {
         galleryGrid.innerHTML = '';
         const filter = galleryFilter.value; // all, unused, linked
 
@@ -171,15 +171,15 @@ document.addEventListener('DOMContentLoaded', () => {
             copyBtn.className = 'btn btn-sm btn-link text-decoration-none p-0 mx-2 text-secondary';
             copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
             copyBtn.title = 'Copy image path';
-            copyBtn.onclick = (e) => {
+            copyBtn.onclick = async (e) => {
                 e.preventDefault();
                 // Copy relative path (photo.url)
-                navigator.clipboard.writeText(photo.url).then(() => {
+                navigator.clipboard.writeText (photo.url).then(() => {
                     const originalHTML = copyBtn.innerHTML;
                     copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     copyBtn.classList.remove('text-secondary');
                     copyBtn.classList.add('text-success');
-                    setTimeout(() => {
+                    setTimeoutasync (() => {
                         copyBtn.innerHTML = originalHTML;
                         copyBtn.classList.remove('text-success');
                         copyBtn.classList.add('text-secondary');
@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function deletePhoto(filename) {
-        if (!confirm(`Delete ${filename}? This includes _icon and _big variants.`)) return;
+        if (!await confirm(`Delete ${filename}? This includes _icon and _big variants.`)) return;
 
         try {
             const headers = {};
@@ -231,17 +231,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderGallery();
             } else {
                 const data = await res.json();
-                alert(data.error || 'Delete failed');
+                await alert(data.error || 'Delete failed');
             }
         } catch (err) {
             console.error(err);
-            alert('Delete failed');
+            await alert('Delete failed');
         }
     }
 
     // --- Upload Logic ---
     if (uploadBtn && uploadModal) {
-        uploadBtn.addEventListener('click', () => {
+        uploadBtn.addEventListener('click', async () => {
             fileInput.value = '';
             filenameInput.value = '';
             uploadModal.show();
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (fileInput && filenameInput) {
-        fileInput.addEventListener('change', () => {
+        fileInput.addEventListener ('change', () => {
             if (fileInput.files.length > 0) {
                 let name = fileInput.files[0].name;
                 // Strip extension
@@ -266,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Folder Upload Logic ---
     if (uploadFolderBtn && folderModal) {
-        uploadFolderBtn.addEventListener('click', () => {
+        uploadFolderBtn.addEventListener('click', async () => {
             folderInput.value = '';
             folderOptions.classList.add('d-none');
             progressContainer.classList.add('d-none');
@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (folderInput) {
-        folderInput.addEventListener('change', () => {
+        folderInput.addEventListener ('change', () => {
             const files = Array.from(folderInput.files).filter(f => f.type.startsWith('image/'));
             if (files.length > 0) {
                 folderOptions.classList.remove('d-none');
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Toggle prefix container
     document.querySelectorAll('input[name="folderNamingMode"]').forEach(radio => {
-        radio.addEventListener('change', () => {
+        radio.addEventListener ('change', () => {
             if (nameRenameRadio.checked) {
                 prefixContainer.classList.remove('d-none');
             } else {
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const prefix = prefixInput.value.trim();
 
             if (namingMode === 'rename' && !prefix) {
-                alert("Please enter a prefix for renaming.");
+                await alert("Please enter a prefix for renaming.");
                 return;
             }
 
@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmUploadBtn.addEventListener('click', async () => {
             const file = fileInput.files[0];
             if (!file) {
-                alert("Please select a file");
+                await alert("Please select a file");
                 return;
             }
 
@@ -422,11 +422,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Reload gallery
                     loadGallery();
                 } else {
-                    alert(data.error || 'Upload failed');
+                    await alert(data.error || 'Upload failed');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Upload error');
+                await alert('Upload error');
             } finally {
                 confirmUploadBtn.disabled = false;
                 confirmUploadBtn.textContent = 'Upload';
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Also listen for tab show
     document.querySelectorAll('button[data-tab="gallery"]').forEach(btn => {
-        btn.addEventListener('click', () => {
+        btn.addEventListener ('click', () => {
             if (allPhotos.length === 0) loadGallery();
         });
     });
