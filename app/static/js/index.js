@@ -1,5 +1,5 @@
 // index.js - loads product list and injects into #product-grid
-async function getBigUrl(url) {
+function getBigUrl(url) {
   if (!url || !url.includes('/static/')) return url;
   const dotIdx = url.lastIndexOf('.');
   let base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
@@ -8,7 +8,7 @@ async function getBigUrl(url) {
   return base + '_big.webp';
 }
 
-async function getIconUrl(url) {
+function getIconUrl(url) {
   if (!url || !url.includes('/static/')) return url;
   const dotIdx = url.lastIndexOf('.');
   let base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;

@@ -142,29 +142,29 @@ def _create_product_internal(data):
             db.session.add(vi)
 
 def _update_product_internal(product, data):
-    product.name = data.get('name', product.name)
-    product.slug = data.get('slug', product.slug)
-    product.description = data.get('description', product.description)
-    product.meta_title = data.get('meta_title', product.meta_title)
-    product.meta_description = data.get('meta_description', product.meta_description)
-    product.short_description = data.get('short_description', product.short_description)
-    product.product_details = data.get('product_details', product.product_details)
-    product.related_products = data.get('related_products', product.related_products)
-    product.proposed_products = data.get('proposed_products', product.proposed_products)
-    product.tag1 = data.get('tag1', product.tag1)
-    product.tag2 = data.get('tag2', product.tag2)
-    product.tag3 = data.get('tag3', product.tag3)
-    product.category = data.get('category', product.category)
-    product.base_price_cents = int(data.get('base_price_cents', product.base_price_cents or 0))
-    product.weight_grams = data.get('weight_grams', product.weight_grams)
-    product.dimensions_json = data.get('dimensions_json', product.dimensions_json)
-    product.message = data.get('message', product.message)
+    if data.get('name') is not None: product.name = data['name']
+    if data.get('slug') is not None: product.slug = data['slug']
+    if data.get('description') is not None: product.description = data['description']
+    if data.get('meta_title') is not None: product.meta_title = data['meta_title']
+    if data.get('meta_description') is not None: product.meta_description = data['meta_description']
+    if data.get('short_description') is not None: product.short_description = data['short_description']
+    if data.get('product_details') is not None: product.product_details = data['product_details']
+    if data.get('related_products') is not None: product.related_products = data['related_products']
+    if data.get('proposed_products') is not None: product.proposed_products = data['proposed_products']
+    if data.get('tag1') is not None: product.tag1 = data['tag1']
+    if data.get('tag2') is not None: product.tag2 = data['tag2']
+    if data.get('tag3') is not None: product.tag3 = data['tag3']
+    if data.get('category') is not None: product.category = data['category']
+    if data.get('base_price_cents') is not None: product.base_price_cents = int(data['base_price_cents'])
+    if data.get('weight_grams') is not None: product.weight_grams = data['weight_grams']
+    if data.get('dimensions_json') is not None: product.dimensions_json = data['dimensions_json']
+    if data.get('message') is not None: product.message = data['message']
 
-    if 'status' in data:
-        product.status = data.get('status')
+    if data.get('status') is not None:
+        product.status = data['status']
         # Sync is_active
         product.is_active = (product.status == 'published')
-    elif 'is_active' in data:
+    elif data.get('is_active') is not None:
         # Fallback for backward compatibility if status not sent but is_active is
         # Though ideally we move to status fully.
         product.is_active = bool(data.get('is_active'))

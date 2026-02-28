@@ -322,6 +322,7 @@ def admin_update_product(sku):
 
 @api_bp.route('/admin/products/<string:sku>', methods=['DELETE'])
 @login_required
+@limiter.exempt
 def admin_delete_product(sku):
     check_admin()
     product = Product.query.filter_by(product_sku=sku).first()
@@ -827,6 +828,7 @@ def admin_import_products():
         return jsonify({"message": "Import successful"}), 200
     except Exception as e:
         db.session.rollback()
+        traceback.print_exc()
         return jsonify({"error": f"Import failed: {str(e)}"}), 500
 
 # Additional Admin APIs (Settings, Currencies, Users, Promotions)

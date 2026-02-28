@@ -171,15 +171,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             copyBtn.className = 'btn btn-sm btn-link text-decoration-none p-0 mx-2 text-secondary';
             copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy';
             copyBtn.title = 'Copy image path';
-            copyBtn.onclick = async (e) => {
+            copyBtn.onclick = (e) => {
                 e.preventDefault();
                 // Copy relative path (photo.url)
-                navigator.clipboard.writeText (photo.url).then(() => {
+                navigator.clipboard.writeText(photo.url).then(() => {
                     const originalHTML = copyBtn.innerHTML;
                     copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                     copyBtn.classList.remove('text-secondary');
                     copyBtn.classList.add('text-success');
-                    setTimeoutasync (() => {
+                    setTimeout(() => {
                         copyBtn.innerHTML = originalHTML;
                         copyBtn.classList.remove('text-success');
                         copyBtn.classList.add('text-secondary');

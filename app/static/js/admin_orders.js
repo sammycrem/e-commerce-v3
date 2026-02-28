@@ -6,7 +6,7 @@
   'use strict';
 
   // Helper to create elements quickly
-  async function el(tag, attrs = {}, ...children) {
+  function el(tag, attrs = {}, ...children) {
     const e = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') e.className = attrs[k];
@@ -22,7 +22,7 @@
   }
 
   // Simple toast / snackbar
-  async function showToast(message, type = 'info', timeout = 3500) {
+  function showToast(message, type = 'info', timeout = 3500) {
     let node = document.getElementById('admin-toast');
     if (!node) {
       node = el('div', { id: 'admin-toast' });
@@ -46,14 +46,14 @@
       boxShadow: '0 6px 18px rgba(0,0,0,0.08)'
     });
     node.appendChild(msg);
-    setTimeoutasync (() => {
+    setTimeout(() => {
       msg.remove();
       if (!node.hasChildNodes()) node.remove();
     }, timeout);
   }
 
   // Format cents to currency string (simple)
-  async function formatPrice(cents) {
+  function formatPrice(cents) {
     cents = Number(cents || 0);
     const symbol = (window.appConfig && window.appConfig.currencySymbol) || '€';
     return `${symbol}${(cents / 100).toFixed(2)}`;
@@ -268,7 +268,7 @@
 
     // amounts
     const amounts = el('div', { class: 'order-amounts bg-light p-3 rounded' });
-    const addRow = async (label, value, isBold = false) => {
+    const addRow = (label, value, isBold = false) => {
       const row = el('div', { class: `d-flex justify-content-between mb-1 ${isBold ? 'fw-bold h5 mt-2 pt-2 border-top' : ''}` },
         el('span', {}, label),
         el('span', {}, value)

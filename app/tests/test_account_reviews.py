@@ -1,20 +1,20 @@
 import pytest
 from app.app import create_app, db
-from app.models import Product, User, Order, OrderItem
+from app.models import Product, User, Order, OrderItem, Variant
 from werkzeug.security import generate_password_hash
 import os
 
 @pytest.fixture
 def app():
     test_config = {
-        "TESTING": True,
+        "TESTING": True, "RATELIMIT_ENABLED": False,
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "CACHE_TYPE": "NullCache",
         "WTF_CSRF_ENABLED": False,
         "APP_ADMIN_USER": "admin",
         "APP_SECRET_KEY": "test",
         "APP_SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "APP_SESSION_TYPE": "filesystem",
+        "APP_SESSION_TYPE": None,
         "APP_SESSION_PERMANENT": "False",
         "APP_PERMANENT_SESSION_LIFETIME": "3600",
         "APP_ADMIN_EMAIL": "admin@example.com",
@@ -40,9 +40,14 @@ def app():
             product_sku='TEST-SKU',
             name='Test Product',
             base_price_cents=1000,
-            is_active=True
+            is_active=True,
+            status='published'
         )
         db.session.add(product)
+        db.session.flush()
+
+        variant = Variant(sku='TEST-SKU-VAR', product_id=product.id, stock_quantity=10)
+        db.session.add(variant)
         db.session.commit()
 
         # Create Order

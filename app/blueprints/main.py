@@ -191,11 +191,10 @@ def product_page(sku):
     if product and current_user.is_authenticated:
         user_review = Review.query.filter_by(user_id=current_user.id, product_id=product.id).first()
 
-        # Check if user has ordered this product via variant SKUs
-        variant_skus = [v.sku for v in product.variants]
-        has_ordered = db.session.query(OrderItem).join(Order).filter(
+        # Check if user has ordered this product
+        has_ordered = db.session.query(OrderItem).join(Order).join(Variant, OrderItem.variant_sku == Variant.sku).filter(
             Order.user_id == current_user.id,
-            OrderItem.variant_sku.in_(variant_skus)
+            Variant.product_id == product.id
         ).count() > 0
 
     return render_template('product_detail.html', sku=sku, product=product, user_review=user_review, has_ordered=has_ordered, seo_metadata=seo_metadata)

@@ -23,7 +23,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from PIL import Image
 import shutil
-
+from decimal import Decimal, ROUND_HALF_UP
 
 
 logger = logging.getLogger(__name__)
@@ -1170,7 +1170,6 @@ def compute_shipping_cost_for_cart(cart_items: list, shipping_zone):
 
 
 
-from decimal import Decimal, ROUND_HALF_UP
 from .extensions import db
 
 def decimal_to_cents(d: Decimal) -> int:

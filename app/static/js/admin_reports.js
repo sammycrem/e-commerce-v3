@@ -18,7 +18,7 @@
         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
         // Correctly format to YYYY-MM-DD using local time part
-        const formatDate = async (d) => {
+        const formatDate = (d) => {
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
@@ -80,11 +80,11 @@
 
             const currencySymbol = window.appConfig?.currencySymbol || '€';
 
-            async function formatMoney(cents) {
+            function formatMoney(cents) {
                 return currencySymbol + ' ' + (cents / 100).toFixed(2);
             }
 
-            async function escapeHtml(text) {
+            function escapeHtml(text) {
                 if (text == null) return '';
                 return String(text)
                     .replace(/&/g, "&amp;")
@@ -135,7 +135,7 @@
             }
 
             let html = '<table class="table table-striped table-hover sortable"><thead><tr>';
-            headers.forEachasync ((h, idx) => {
+            headers.forEach((h, idx) => {
                 html += `<th data-col="${idx}" style="cursor:pointer;">${h} <i class="fas fa-sort text-muted small"></i></th>`;
             });
             html += '</tr></thead><tbody>';
@@ -169,7 +169,7 @@
                     headers.forEach(h => h.querySelector('i').className = 'fas fa-sort text-muted small');
                     th.querySelector('i').className = `fas fa-sort-${isAsc ? 'down' : 'up'}`;
 
-                    rows.sortasync ((a, b) => {
+                    rows.sort((a, b) => {
                         const cellA = a.children[colIdx].innerText;
                         const cellB = b.children[colIdx].innerText;
 

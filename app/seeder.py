@@ -37,12 +37,11 @@ def usd_to_cents(usd):
     d = Decimal(str(usd)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return int(d * 100)
 
-def create_product_data(product_key, category=None, name=None):
-    # New SKU format: T-Shirt_p-1_x5 (example, we'll just append random suffix)
-    import random
-    import string
-    suffix_p = f"{random.choice(string.ascii_lowercase)}{random.randint(0,9)}"
-    sku = f"{product_key}_{suffix_p}"
+def create_product_data(product_key, category=None, name=None, j=0, i=1):
+    # Predictable SKU format for tests
+    sku = product_key.upper()
+    if j > 0 or i > 1:
+        sku = f"{sku}-{j+1}-{i}"
 
     if not name:
         name = f"T-Shirt {product_key.upper()}"
@@ -52,13 +51,8 @@ def create_product_data(product_key, category=None, name=None):
 
     description = f"Comfortable cotton tee — design {product_key.upper()}."
     base_price_usd = BASE_PRICES_USD.get(product_key, 19.99)
-    # If product_key matches p-X pattern but we have multiple categories,
-    # we reuse the base prices.
     # Extract base key if possible (e.g. p-1 from p-1)
-    base_key = product_key.split('_')[0] if '_' in product_key else product_key
-    if base_key not in BASE_PRICES_USD and len(base_key) > 2:
-         # Try to match just p-X
-         pass
+    base_key = product_key.split('-')[0] if '-' in product_key else product_key
 
     base_price_cents = usd_to_cents(base_price_usd)
     product_image_url = f"{BASE_IMAGE_URL}/{base_key}/a-1.webp"
@@ -75,11 +69,8 @@ def create_product_data(product_key, category=None, name=None):
         ]
 
         for size in SIZES:
-            # New Variant SKU format: ProductSKU_Color_Size_Suffix
-            # suffix: letter + 0-99
-            import string
-            suffix_v = f"{random.choice(string.ascii_lowercase)}{random.randint(0,99)}"
-            variant_sku = f"{sku}_{color_name}_{size}_{suffix_v}"
+            # Predictable Variant SKU format
+            variant_sku = f"{sku}-{color_name[:1].upper()}-{size}"
 
             price_modifier_cents = int(round(base_price_cents * modifier_pct))
             variants.append({
@@ -288,7 +279,8 @@ def setup_database(app):
                 slug='sample-product',
                 description='This is a sample product.',
                 category='Samples',
-                base_price_cents=12345
+                base_price_cents=12345,
+                status='published'
             )
             db.session.add(product)
             db.session.flush()
@@ -330,7 +322,7 @@ def setup_database(app):
                     if Product.query.filter_by(name=name).first():
                         continue
 
-                    pdata = create_product_data(base_key, cat_name, name)
+                    pdata = create_product_data(base_key, cat_name, name, j, i)
 
                     prod = insert_product(db.session, pdata)
                     created.append(prod.product_sku)

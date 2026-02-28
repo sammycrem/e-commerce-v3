@@ -157,6 +157,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       vatToggle.addEventListener('change', updateVatLabel);
   }
 
+  const checkoutBtn = document.getElementById('checkout-btn');
+  if (checkoutBtn) {
+      checkoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const isAuth = checkoutBtn.dataset.isAuthenticated === 'true';
+          if (isAuth) {
+              window.location.href = '/checkout/shipping-address';
+          } else {
+              window.location.href = '/checkout/login';
+          }
+      });
+  }
+
   (async function init() {
     await refreshCart();
   })();
