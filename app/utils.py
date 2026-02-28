@@ -612,7 +612,7 @@ def ensure_icon_for_url(url, app_root_path):
     # 3. Check/Create Big (height 600)
     big_path = base + "_big.webp"
     if not os.path.exists(big_path):
-        generate_image_icon(input_path, big_path, height=600)
+        generate_image_icon(input_path, big_path, height=400)
 # ---------end------------
 
 def rename_image(old_name, new_name, upload_folder):

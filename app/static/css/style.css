@@ -211,11 +211,13 @@ a:hover {
     width: 100%;
     height: auto !important;
     object-fit: cover;
-    transition: transform 0.5s ease;
+    transition: none ;
+   
 }
 
 .product-card:hover .card-img-top {
-    transform: translateY(-5px) scale(1.1);
+    transform:  scale(1.4);
+    transition: all .8s ease;
 }
 
 .product-overlay {

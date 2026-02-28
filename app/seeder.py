@@ -52,7 +52,7 @@ def create_product_data(product_key, category=None, name=None, j=0, i=1):
     description = f"Comfortable cotton tee — design {product_key.upper()}."
     base_price_usd = BASE_PRICES_USD.get(product_key, 19.99)
     # Extract base key if possible (e.g. p-1 from p-1)
-    base_key = product_key.split('-')[0] if '-' in product_key else product_key
+    base_key = product_key#.split('-')[0] if '-' in product_key else product_key
 
     base_price_cents = usd_to_cents(base_price_usd)
     product_image_url = f"{BASE_IMAGE_URL}/{base_key}/a-1.webp"
