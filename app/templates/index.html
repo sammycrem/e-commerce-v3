@@ -10,6 +10,21 @@
     .carousel-item {
     transition: transform .4s ease-in-out !important;
     }
+
+    #categoryCarousel .carousel-indicators button {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        opacity: 0.5;
+        border: none;
+        margin: 0 4px;
+    }
+    #categoryCarousel .carousel-indicators button.active {
+        opacity: 1;
+        background-color: #000252;
+    }
+
     .carousel-css{
         background: #ffbce0;
         border-radius: 10px;
@@ -226,6 +241,11 @@
         <!-- Middle Column (Carousel 50% on desktop) -->
         <div class="col-lg-6 col-12 order-1 order-lg-2">
             <div id="categoryCarousel" class="carousel slide carousel-css" data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                    {% for item in category_data %}
+                    <button type="button" data-bs-target="#categoryCarousel" data-bs-slide-to="{{ loop.index0 }}" {% if loop.first %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ loop.index }}"></button>
+                    {% endfor %}
+                </div>
                 <div class="carousel-inner">
                     {% for item in category_data %}
                     <div class="carousel-item {% if loop.first %}active{% endif %}">
@@ -277,7 +297,7 @@
 <div class="container py-4" id="product-grid">
     <!-- Category Grid Sections -->
     {% for item in category_data %}
-    <div class="category-section mb-5">
+    <div class="category-section mb-5 preload-section">
         <div class="mb-4">
             <h2 class="fw-bold d-inline-block me-3 mb-0">{{ item.category.name }}</h2>
             <a href="{{ url_for('main.shop_page', slug=item.category.slug) }}" class="btn btn-link text-primary fw-bold text-decoration-none p-0 align-baseline">
