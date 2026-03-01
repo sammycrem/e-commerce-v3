@@ -24,6 +24,12 @@ body {
     background-color: #f8fafc;
 }
 
+
+
+.text-white {
+color: white !important;
+}
+
 .preload-section {
     opacity: 0;
     transition: opacity 0.5s ease-in-out;
@@ -225,7 +231,7 @@ a:hover {
 
 .product-card:hover .card-img-top {
     transform:  scale(1.4);
-    transition: all .8s ease;
+    transition: all .2s ease;
 }
 
 .product-overlay {
@@ -252,7 +258,7 @@ a:hover {
     -webkit-box-orient: vertical;
     overflow: hidden;
     font-size: inherit;
-    font-weight: 600 !important;
+    font-weight: 500 !important;
 }
 
 /* Product Detail */
