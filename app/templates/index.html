@@ -241,14 +241,14 @@
         <!-- Left Column (3 buttons) -->
         <div class="col-lg-3 col-12 order-2 order-lg-1">
             <div class="side-buttons">
-                <a href="#" class="side-btn"><i class="bi bi-truck me-2"></i> Free Shipping</a>
-                <a href="#" class="side-btn"><i class="bi bi-shield-check me-2"></i> Secure Payment</a>
-                <a href="#" class="side-btn"><i class="bi bi-headset me-2"></i> 24/7 Support</a>
+                <a href="javascript:void(0)" class="side-btn service-btn" data-desc-id="desc-free-shipping"><i class="bi bi-truck me-2"></i> Free Shipping</a>
+                <a href="javascript:void(0)" class="side-btn service-btn" data-desc-id="desc-secure-payment"><i class="bi bi-shield-check me-2"></i> Secure Payment</a>
+                <a href="javascript:void(0)" class="side-btn service-btn" data-desc-id="desc-support"><i class="bi bi-headset me-2"></i> 24/7 Support</a>
             </div>
         </div>
 
         <!-- Middle Column (Carousel 50% on desktop) -->
-        <div class="col-lg-6 col-12 order-1 order-lg-2">
+        <div id="carousel-column" class="col-lg-6 col-12 order-1 order-lg-2">
             <div id="categoryCarousel" class="carousel slide carousel-css" data-bs-ride="carousel">
                 <div class="carousel-indicators">
                     {% for item in category_data %}
@@ -292,12 +292,109 @@
             </div>
         </div>
 
+        <!-- Service Descriptions -->
+        <div id="desc-free-shipping" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
+            <div class="carousel-css shadow-sm h-100">
+                <div class="carousel-container">
+                    <div class="carousel-item-custom">
+                        <div class="banner-text-side">
+                            <h2 class="display-6 fw-bold mb-3 text-uppercase">Free Shipping</h2>
+                            <p class="mb-0">Enjoy free shipping on all orders over $50. No hidden fees, just fast delivery to your doorstep.</p>
+                        </div>
+                        <div class="banner-image-side justify-content-center align-items-center">
+                            <i class="bi bi-truck" style="font-size: 8rem; color: #000252;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="desc-secure-payment" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
+            <div class="carousel-css shadow-sm h-100">
+                <div class="carousel-container">
+                    <div class="carousel-item-custom">
+                        <div class="banner-text-side">
+                            <h2 class="display-6 fw-bold mb-3 text-uppercase">Secure Payment</h2>
+                            <p class="mb-0">Your security is our priority. We use industry-leading encryption to protect your payment information.</p>
+                        </div>
+                        <div class="banner-image-side justify-content-center align-items-center">
+                            <i class="bi bi-shield-check" style="font-size: 8rem; color: #000252;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="desc-support" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
+            <div class="carousel-css shadow-sm h-100">
+                <div class="carousel-container">
+                    <div class="carousel-item-custom">
+                        <div class="banner-text-side">
+                            <h2 class="display-6 fw-bold mb-3 text-uppercase">24/7 Support</h2>
+                            <p class="mb-0">Our dedicated support team is available around the clock to help you with any questions or issues.</p>
+                        </div>
+                        <div class="banner-image-side justify-content-center align-items-center">
+                            <i class="bi bi-headset" style="font-size: 8rem; color: #000252;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="desc-quality" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
+            <div class="carousel-css shadow-sm h-100">
+                <div class="carousel-container">
+                    <div class="carousel-item-custom">
+                        <div class="banner-text-side">
+                            <h2 class="display-6 fw-bold mb-3 text-uppercase">Best Quality</h2>
+                            <p class="mb-0">We source only the finest materials and products to ensure you receive the best quality every time.</p>
+                        </div>
+                        <div class="banner-image-side justify-content-center align-items-center">
+                            <i class="bi bi-star" style="font-size: 8rem; color: #000252;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="desc-returns" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
+            <div class="carousel-css shadow-sm h-100">
+                <div class="carousel-container">
+                    <div class="carousel-item-custom">
+                        <div class="banner-text-side">
+                            <h2 class="display-6 fw-bold mb-3 text-uppercase">Easy Returns</h2>
+                            <p class="mb-0">Not satisfied? No problem. Our easy return process makes it simple to get a refund or exchange.</p>
+                        </div>
+                        <div class="banner-image-side justify-content-center align-items-center">
+                            <i class="bi bi-arrow-repeat" style="font-size: 8rem; color: #000252;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="desc-gift-cards" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
+            <div class="carousel-css shadow-sm h-100">
+                <div class="carousel-container">
+                    <div class="carousel-item-custom">
+                        <div class="banner-text-side">
+                            <h2 class="display-6 fw-bold mb-3 text-uppercase">Gift Cards</h2>
+                            <p class="mb-0">The perfect gift for any occasion. Share the joy of shopping with our flexible gift card options.</p>
+                        </div>
+                        <div class="banner-image-side justify-content-center align-items-center">
+                            <i class="bi bi-gift" style="font-size: 8rem; color: #000252;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Right Column (3 buttons) -->
         <div class="col-lg-3 col-12 order-3">
             <div class="side-buttons">
-                <a href="#" class="side-btn"><i class="bi bi-star me-2"></i> Best Quality</a>
-                <a href="#" class="side-btn"><i class="bi bi-arrow-repeat me-2"></i> Easy Returns</a>
-                <a href="#" class="side-btn"><i class="bi bi-gift me-2"></i> Gift Cards</a>
+                <a href="javascript:void(0)" class="side-btn service-btn" data-desc-id="desc-quality"><i class="bi bi-star me-2"></i> Best Quality</a>
+                <a href="javascript:void(0)" class="side-btn service-btn" data-desc-id="desc-returns"><i class="bi bi-arrow-repeat me-2"></i> Easy Returns</a>
+                <a href="javascript:void(0)" class="side-btn service-btn" data-desc-id="desc-gift-cards"><i class="bi bi-gift me-2"></i> Gift Cards</a>
             </div>
         </div>
     </div>
@@ -377,4 +474,43 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const serviceButtons = document.querySelectorAll('.service-btn');
+        const carouselColumn = document.getElementById('carousel-column');
+        const descriptions = document.querySelectorAll('.service-description');
+        let descriptionTimeout;
+
+        function showCarousel() {
+            descriptions.forEach(desc => desc.classList.add('d-none'));
+            if (carouselColumn) {
+                carouselColumn.classList.remove('d-none');
+            }
+        }
+
+        serviceButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-desc-id');
+                const targetDesc = document.getElementById(targetId);
+
+                if (targetDesc) {
+                    // Clear existing timeout
+                    clearTimeout(descriptionTimeout);
+
+                    // Hide carousel and all descriptions
+                    if (carouselColumn) {
+                        carouselColumn.classList.add('d-none');
+                    }
+                    descriptions.forEach(desc => desc.classList.add('d-none'));
+
+                    // Show selected description
+                    targetDesc.classList.remove('d-none');
+
+                    // Set timeout to revert to carousel after 20 seconds
+                    descriptionTimeout = setTimeout(showCarousel, 20000);
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}
