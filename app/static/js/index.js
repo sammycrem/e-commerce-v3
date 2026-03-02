@@ -193,7 +193,7 @@ window.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </a>
             <div class="card-body">
-                <h5 class="card-title fw-bold mb-2" style="font-size: small !important;">
+                <h5 class="card-title fw-bold mb-2" style="font-size: medium !important;">
                     <a href="/product/${p.product_sku}" class="text-decoration-none text-dark">${p.name}</a>
                 </h5>
                 <p class="card-text text-muted small mb-3 text-truncate-2">${p.short_description || ''}</p>

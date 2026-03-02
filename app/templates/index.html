@@ -10,11 +10,6 @@
     .carousel-item {
     transition: transform .4s ease-in-out !important;
     }
-    .carousel-indicators{
-        z-index: 2000000 !important;
-            bottom: -8px !important;
-
-    }
 
     #categoryCarousel .carousel-indicators button {
         width: 12px;
@@ -24,7 +19,6 @@
         opacity: 0.5;
         border: none;
         margin: 0 4px;
-        
     }
     #categoryCarousel .carousel-indicators button.active {
         opacity: 1;
@@ -32,7 +26,7 @@
     }
 
     .carousel-css{
-        background: antiquewhite;
+        background: #ffbce0;
         border-radius: 10px;
     }
     
@@ -97,7 +91,7 @@
         align-items: center;
         justify-content: center;
         border-radius: 10px;
-        background-color: antiquewhite;
+        background-color: #ffbce0;
         min-height: 29%;
     }
 
@@ -141,12 +135,9 @@
     }
 
     .banner-image-side img {
-        width: auto;
-        height: 205px;
+        width: 50%;
+        height: 100%;
         object-fit: cover;
-        margin-top: auto;
-        margin-bottom: auto;
-        border-radius: 20px;
     }
 
     .btn-shop-now {
@@ -259,14 +250,14 @@
                     {% for item in category_data %}
                     <div class="carousel-item {% if loop.first %}active{% endif %}">
                         <div class="carousel-container shadow-sm">
-                            <!-- If even index, text on left. If odd, text on right (reversed) -->
-                            <div class="carousel-item-custom {% if loop.index0 % 2 != 0 %}flex-row-reverse{% endif %}">
+                            {% if loop.index0 % 2 == 0 %}
+                            <!-- Odd slide (index 0, 2, 4...) -> Text on left, 2 images on right -->
+                            <div class="carousel-item-custom">
                                 <div class="banner-text-side">
                                     <h2 class="display-6 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
                                     <a href="{{ url_for('main.shop_page', slug=item.category.slug) }}" class="btn-shop-now bg-primary">Shop Now</a>
                                 </div>
                                 <div class="banner-image-side">
-                                    {# Limit to 2 products for the banner display #}
                                     {% for prod in item.products[:2] %}
                                         {% if prod.images %}
                                             <img src="{{ prod.images[0].url | big_url }}" alt="{{ prod.name }}">
@@ -276,6 +267,36 @@
                                     {% endfor %}
                                 </div>
                             </div>
+                            {% else %}
+                            <!-- Even slide (index 1, 3, 5...) -> Image 1 left, Text middle, Image 2 right -->
+                            <div class="carousel-item-custom slide-even">
+                                {% set products = item.products[:2] %}
+                                {% if products|length >= 1 %}
+                                <div class="banner-image-side-single">
+                                    {% if products[0].images %}
+                                        <img src="{{ products[0].images[0].url | big_url }}" alt="{{ products[0].name }}">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='img/placeholder.webp') }}" alt="Placeholder">
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                <div class="banner-text-side-middle text-center">
+                                    <h2 class="display-6 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
+                                    <a href="{{ url_for('main.shop_page', slug=item.category.slug) }}" class="btn-shop-now bg-primary mx-auto">Shop Now</a>
+                                </div>
+
+                                {% if products|length == 2 %}
+                                <div class="banner-image-side-single right-img">
+                                    {% if products[1].images %}
+                                        <img src="{{ products[1].images[0].url | big_url }}" alt="{{ products[1].name }}">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='img/placeholder.webp') }}" alt="Placeholder">
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -334,7 +355,7 @@
                         </div>
                     </a>
                     <div class="card-body">
-                        <h5 class="card-title fw-bold mb-2" style="font-size: small !important;">
+                        <h5 class="card-title fw-bold mb-2" style="font-size: medium !important;">
                             <a href="{{ url_for('main.product_page', sku=product.product_sku) }}" class="text-decoration-none text-dark">{{ product.name }}</a>
                         </h5>
                         <p class="card-text text-muted small mb-3 text-truncate-2">{{ product.short_description }}</p>
@@ -362,13 +383,13 @@
     <div class="container py-4 text-center">
         <div class="row justify-content-center">
             <div class="col-lg-6">
-                <h2 class="fw-bold mb-3" style="color: white;">Join Our Newsletter</h2>
-                <p class="text-white mb-4">Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
+                <h2 class="fw-bold mb-3">Join Our Newsletter</h2>
+                <p class="text-muted mb-4">Subscribe to get special offers, free giveaways, and once-in-a-lifetime deals.</p>
                 <div class="input-group mb-3 px-md-5">
                     <input type="email" class="form-control" placeholder="your@email.com" aria-label="Email">
                     <button class="btn btn-primary px-4" type="button">Subscribe</button>
                 </div>
-                <p class="small text-white mb-0">We respect your privacy. Unsubscribe at any time.</p>
+                <p class="small text-muted mb-0">We respect your privacy. Unsubscribe at any time.</p>
             </div>
         </div>
     </div>
