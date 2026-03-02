@@ -83,22 +83,24 @@
     }
 
     .side-btn {
-        /*background: #fff;*/
-        border: 1px solid #dee2e6;
-        padding: 1rem;
-        text-align: center;
-        font-weight: bold;
-        text-transform: uppercase;
-        font-size: 1rem;
-        color: #000252;
-        text-decoration: none;
-        transition: all 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 10px;
-        background-color: antiquewhite;
-        min-height: 29%;
+         background: #fff;
+    border: 1px solid #dee2e6;
+    /* padding: 1rem; */
+    text-align: center;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 1rem;
+    color: #000252;
+    text-decoration: none;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background-color: #ffc107;
+    min-height: 15%;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
     }
 
     .side-btn:hover {
@@ -237,7 +239,7 @@
 {% block content %}
 
 <div class="container-fluid banner-section px-0">
-    <div class="row g-0">
+    <div class="row g-0" style="background: #faebd7;border-radius: 20px;margin: 5%;margin-top: 0px;margin-bottom: 0px;">
         <!-- Left Column (3 buttons) -->
         <div class="col-lg-3 col-12 order-2 order-lg-1">
             <div class="side-buttons">
@@ -506,8 +508,8 @@
                     // Show selected description
                     targetDesc.classList.remove('d-none');
 
-                    // Set timeout to revert to carousel after 20 seconds
-                    descriptionTimeout = setTimeout(showCarousel, 20000);
+                    // Set timeout to revert to carousel after 10 seconds
+                    descriptionTimeout = setTimeout(showCarousel, 10000);
                 }
             });
         });
