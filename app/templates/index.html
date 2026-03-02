@@ -32,7 +32,7 @@
     }
 
     .carousel-css{
-        background: antiquewhite;
+        background: transparent;
         border-radius: 10px;
     }
     
@@ -66,9 +66,13 @@
 
     /* Carousel Banner Styles */
     .banner-section {
-        background-color: unset;
+        background-color: antiquewhite;
         margin-bottom: 1rem;
         max-width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+        border-radius: 15px;
+        padding: 20px 0;
     }
 
     .side-buttons {
@@ -83,24 +87,22 @@
     }
 
     .side-btn {
-         background: #fff;
-    border: 1px solid #dee2e6;
-    /* padding: 1rem; */
-    text-align: center;
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 1rem;
-    color: #000252;
-    text-decoration: none;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    background-color: #ffc107;
-    min-height: 15%;
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+        /*background: #fff;*/
+        border: 1px solid #dee2e6;
+        padding: 1rem;
+        text-align: center;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 1rem;
+        color: #000252;
+        text-decoration: none;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background-color: #ffc107;
+        min-height: 29%;
     }
 
     .side-btn:hover {
@@ -232,6 +234,30 @@
     .text-warning{
         display: none;
     }
+
+    /* Service Description Styling */
+    .service-description .carousel-item-custom {
+        background-color: transparent;
+    }
+
+    .service-description .banner-text-side {
+        padding: 2rem;
+        text-align: left;
+    }
+
+    .service-description .banner-image-side {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .service-description .bi {
+        transition: transform 0.5s ease;
+    }
+
+    .service-description:not(.d-none) .bi {
+        transform: scale(1.1);
+    }
 </style>
 
 {% endblock %}
@@ -239,7 +265,7 @@
 {% block content %}
 
 <div class="container-fluid banner-section px-0">
-    <div class="row g-0" style="background: #faebd7;border-radius: 20px;margin: 5%;margin-top: 0px;margin-bottom: 0px;">
+    <div class="row g-0">
         <!-- Left Column (3 buttons) -->
         <div class="col-lg-3 col-12 order-2 order-lg-1">
             <div class="side-buttons">
@@ -507,9 +533,10 @@
 
                     // Show selected description
                     targetDesc.classList.remove('d-none');
+                    targetDesc.classList.add('animate__animated', 'animate__fadeIn');
 
-                    // Set timeout to revert to carousel after 10 seconds
-                    descriptionTimeout = setTimeout(showCarousel, 10000);
+                    // Set timeout to revert to carousel after 20 seconds
+                    descriptionTimeout = setTimeout(showCarousel, 20000);
                 }
             });
         });
