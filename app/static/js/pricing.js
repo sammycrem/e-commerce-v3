@@ -1,8 +1,8 @@
 // static/js/pricing.js
-(function() {
+(async function() {
     'use strict';
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         const vatToggle = document.getElementById('vat-toggle');
         const shipToContainer = document.getElementById('ship-to-container');
         const shipToSelect = document.getElementById('ship-to-select');
@@ -61,7 +61,7 @@
             updatePrices();
         }
 
-        function handleVatVisibility(showVat) {
+        async function handleVatVisibility(showVat) {
             const mode = window.appConfig.vatMode || 'SHIPPING_ADDRESS';
             if (mode === 'SHIPPING_ADDRESS' && shipToContainer) {
                 // Show Ship To only if we care about VAT?
@@ -94,7 +94,7 @@
             }
         }
 
-        function getEffectiveVatRate() {
+        async function getEffectiveVatRate() {
             const mode = window.appConfig.vatMode || 'SHIPPING_ADDRESS';
 
             if (mode === 'DEFAULT_COUNTRY') {
@@ -110,9 +110,9 @@
             }
         }
 
-        function updatePrices() {
+        async function updatePrices() {
             const showVat = vatToggle ? vatToggle.checked : false;
-            const rate = getEffectiveVatRate();
+            const rate = await getEffectiveVatRate();
             const symbol = window.appConfig.currencySymbol || '€';
 
             document.querySelectorAll('.product-price').forEach(el => {
@@ -140,9 +140,9 @@
         window.updateAllPrices = updatePrices;
 
         // Export for other scripts if needed (e.g., product page variant updates)
-        window.calculateDisplayPrice = function(baseCents) {
+        window.calculateDisplayPrice = async function(baseCents) {
              const showVat = vatToggle ? vatToggle.checked : false;
-             const rate = getEffectiveVatRate();
+             const rate = await getEffectiveVatRate();
              const symbol = window.appConfig.currencySymbol || '€';
 
              let finalCents = baseCents;

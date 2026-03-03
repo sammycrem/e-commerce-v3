@@ -1,9 +1,9 @@
-(function() {
+(async function() {
     'use strict';
 
     function $(sel, root = document) { return root.querySelector(sel); }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         const btnGenerate = $('#btn-generate-report');
         const btnExport = $('#btn-export-report');
         const reportType = $('#report-type');
@@ -55,7 +55,7 @@
             }
         }
 
-        function exportReport() {
+        async function exportReport() {
             const type = reportType.value;
             const start = reportStart.value;
             const end = reportEnd.value;
@@ -69,7 +69,7 @@
             window.location.href = url.toString();
         }
 
-        function renderTable(type, data) {
+        async function renderTable(type, data) {
             if (!data || data.length === 0) {
                 reportResults.innerHTML = '<p class="text-center py-5">No data found for the selected period.</p>';
                 return;
@@ -152,7 +152,7 @@
             makeSortable(reportResults.querySelector('table'));
         }
 
-        function makeSortable(table) {
+        async function makeSortable(table) {
             const headers = table.querySelectorAll('th');
             const tbody = table.querySelector('tbody');
 

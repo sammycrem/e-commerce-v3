@@ -6,22 +6,22 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {% block meta_tags %}
-    <meta name="description" content="E-Commerce Pro - High quality products delivered to your door.">
-    <meta name="keywords" content="ecommerce, shop, products">
+    <meta name="description" content="{{ seo_metadata.description if seo_metadata and seo_metadata.description else 'E-Commerce Pro - High quality products delivered to your door.' }}">
+    <meta name="keywords" content="ecommerce, shop, products, {{ seo_metadata.title if seo_metadata and seo_metadata.title else '' }}">
     {% endblock %}
 
     {% block og_tags %}
-    <meta property="og:title" content="E-Commerce Pro">
-    <meta property="og:description" content="High quality products delivered to your door.">
+    <meta property="og:title" content="{{ seo_metadata.title if seo_metadata and seo_metadata.title else 'E-Commerce Pro' }}">
+    <meta property="og:description" content="{{ seo_metadata.description if seo_metadata and seo_metadata.description else 'High quality products delivered to your door.' }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url }}">
     {% endblock %}
 
     {% block canonical_url %}
-    <link rel="canonical" href="{{ request.url }}">
+    <link rel="canonical" href="{{ request.base_url }}">
     {% endblock %}
 
-    <title>{% block title %}My Shop{% endblock %}</title>
+    <title>{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else 'My Shop' }}{% endblock %}</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
@@ -46,6 +46,31 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
+                    {% if not request.path.startswith('/admin') and not request.path.startswith('/login') and not request.path.startswith('/signup') %}
+                    <form id="product-search-form" class="d-flex ms-lg-4 me-auto my-2 my-lg-0 w-100" style="max-width: 600px;" action="/shop" method="GET">
+                        <div class="input-group">
+                            <select class="form-select border-0 bg-light fw-bold" name="category" id="search-category" style="max-width: 150px;">
+                                <option value="">All Products</option>
+                                <optgroup label="Categories">
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.slug or cat.name }}" {% if request.args.get('category') == cat.slug or request.args.get('category') == cat.name %}selected{% endif %}>{{ cat.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% if active_groups %}
+                                <optgroup label="Featured Groups">
+                                    {% for group in active_groups %}
+                                    <option value="group:{{ group.slug or group.id }}" {% if request.args.get('group_id') == group.id|string or request.path.endswith('/group/' ~ group.slug) %}selected{% endif %}>{{ group.name }}</option>
+                                    {% endfor %}
+                                </optgroup>
+                                {% endif %}
+                            </select>
+                            <input type="text" class="form-control border-0" name="q" id="search-input" placeholder="Search products..." aria-label="Search" value="{{ request.args.get('q', '') }}">
+                            <button class="btn btn-light" type="submit" aria-label="Search products">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                    {% endif %}
                     <ul class="navbar-nav ms-auto align-items-center">
                         <li class="nav-item">
                             <a class="nav-link px-3" href="/">Home</a>
@@ -124,7 +149,7 @@
       {% endif %}
     {% endwith %}
 
-    <main class="flex-grow-1 py-5">
+    <main class="flex-grow-1 py-3">
         {% block content %}{% endblock %}
     </main>
 
@@ -132,27 +157,27 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-4 mb-md-0">
-                    <h5 class="text-uppercase fw-bold mb-4">E-Commerce Pro</h5>
-                    <p class="text-muted">High-quality products delivered to your door. Experience professional shopping with us.</p>
+                    <h5 class="text-uppercase fw-bold mb-4 text-white">E-Commerce Pro</h5>
+                    <p class="text-white">High-quality products delivered to your door. Experience professional shopping with us.</p>
                 </div>
                 <div class="col-md-2 mb-4 mb-md-0">
-                    <h5 class="text-uppercase fw-bold mb-4">Links</h5>
+                    <h5 class="text-uppercase fw-bold mb-4 text-white">Links</h5>
                     <ul class="list-unstyled">
-                        <li><a href="/" class="text-muted text-decoration-none">Home</a></li>
-                        <li><a href="/shop" class="text-muted text-decoration-none">Products</a></li>
-                        <li><a href="/cart" class="text-muted text-decoration-none">My Cart</a></li>
+                        <li><a href="/" class="text-white text-decoration-none">Home</a></li>
+                        <li><a href="/shop" class="text-white text-decoration-none">Products</a></li>
+                        <li><a href="/cart" class="text-white text-decoration-none">My Cart</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3 mb-4 mb-md-0">
-                    <h5 class="text-uppercase fw-bold mb-4">Support</h5>
+                    <h5 class="text-uppercase fw-bold mb-4 text-white">Support</h5>
                     <ul class="list-unstyled">
-                        <li><a href="/contact" class="text-muted text-decoration-none">Contact Us</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Terms of Service</a></li>
-                        <li><a href="#" class="text-muted text-decoration-none">Privacy Policy</a></li>
+                        <li><a href="/contact" class="text-white text-decoration-none">Contact Us</a></li>
+                        <li><a href="#" class="text-white text-decoration-none">Terms of Service</a></li>
+                        <li><a href="#" class="text-white text-decoration-none">Privacy Policy</a></li>
                     </ul>
                 </div>
                 <div class="col-md-3">
-                    <h5 class="text-uppercase fw-bold mb-4">Newsletter</h5>
+                    <h5 class="text-uppercase fw-bold mb-4 text-white">Newsletter</h5>
                     <form class="input-group mb-3">
                         <input type="email" class="form-control" placeholder="Email address" aria-label="Email address">
                         <button class="btn btn-primary" type="button">Join</button>
@@ -162,7 +187,7 @@
             <hr class="bg-secondary mt-4 mb-4">
             <div class="row align-items-center">
                 <div class="col-md-7 col-lg-8 text-center text-md-start">
-                    <p class="mb-0 text-muted">&copy; {{ now.year if now else '2026' }} E-Commerce Pro. All rights reserved.</p>
+                    <p class="mb-0 text-white">&copy; {{ now.year if now else '2026' }} E-Commerce Pro. All rights reserved.</p>
                 </div>
                 <div class="col-md-5 col-lg-4 text-center text-md-end">
                     <ul class="list-inline mb-0">
@@ -175,6 +200,23 @@
         </div>
     </footer>
 
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert-overlay">
+        <div id="custom-alert-box">
+            <div class="custom-alert-header">
+                <i class="bi bi-info-circle-fill"></i>
+                <span id="custom-alert-title">Message</span>
+            </div>
+            <div class="custom-alert-body" id="custom-alert-message">
+                Alert message goes here.
+            </div>
+            <div class="custom-alert-footer">
+                <button class="custom-alert-btn cancel" id="custom-alert-cancel" style="display: none;">Cancel</button>
+                <button class="custom-alert-btn" id="custom-alert-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global app configuration
         window.appConfig = {
@@ -185,6 +227,7 @@
     </script>
     <!-- Bootstrap 5 Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/alerts.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pricing.js') }}" defer></script>
     {% block scripts %}{% endblock %}
 </body>

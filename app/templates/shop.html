@@ -1,25 +1,45 @@
 {% extends "layout.html" %}
 
-{% block title %}Shop - Our Products{% endblock %}
+{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else 'Shop - Our Products' }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "itemListElement": [
+    {% for product in products %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "url": "{{ url_for('main.product_page', sku=product.product_sku, _external=True) }}",
+      "name": "{{ product.name }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="bg-light py-5 mb-5 border-bottom">
     <div class="container text-center">
-        <h1 class="display-4 fw-bold">Shop</h1>
-        <p class="lead text-muted">Explore our exclusive collection of high-quality products.</p>
+        <h1 class="display-4 fw-bold">{{ seo_metadata.heading if seo_metadata and seo_metadata.heading else 'Shop' }}</h1>
+        <p class="lead text-muted">{{ seo_metadata.description if seo_metadata and seo_metadata.description else 'Explore our exclusive collection of high-quality products.' }}</p>
     </div>
 </div>
 
 <div class="container mb-5">
-    <div class="row g-4">
+    <div class="row g-4 preload-section" id="product-grid">
         {% for product in products %}
         <div class="col-sm-6 col-md-4 col-lg-3 wide-20">
             <div class="card h-100 shadow-sm border-0 product-card overflow-hidden" style="border-radius: 0;">
                 <a href="{{ url_for('main.product_page', sku=product.product_sku) }}" class="product-image-container d-block position-relative">
                     {% if product.images %}
-                        <img src="{{ product.images[0].url | big_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                        <img src="{{ product.images[0].url | big_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;" loading="lazy">
                     {% else %}
-                        <img src="{{ url_for('static', filename='img/placeholder.webp') }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                        <img src="{{ url_for('static', filename='img/placeholder.webp') }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;" loading="lazy">
                     {% endif %}
                     <div class="product-overlay d-flex align-items-center justify-content-center opacity-0 transition">
                         <span class="btn btn-primary shadow">View Details</span>
@@ -31,7 +51,7 @@
                     </div>
                 </a>
                 <div class="card-body">
-                    <h5 class="card-title fw-bold mb-2" style="font-size: medium !important;">
+                    <h5 class="card-title fw-bold mb-2" style="font-size: small !important;">
                         <a href="{{ url_for('main.product_page', sku=product.product_sku) }}" class="text-decoration-none text-dark">{{ product.name }}</a>
                     </h5>
                     <p class="card-text text-muted small mb-3 text-truncate-2">{{ product.short_description }}</p>
@@ -64,4 +84,8 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
 {% endblock %}

@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, abort, send_from_directory, request, jsonify, redirect, url_for, session, current_app, flash
+from collections import defaultdict
 from flask_login import current_user, login_required, logout_user, login_user
-from ..models import User, Product, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
+from ..models import User, Product, Variant, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
 from ..extensions import db, limiter, cache
 from sqlalchemy.orm import joinedload
+from sqlalchemy import func
 from werkzeug.security import check_password_hash, generate_password_hash
 from ..utils import generate_id, create_directory, send_emailTls2, convert_to_webp, generate_image_icon, ensure_icon_for_url
 import os
@@ -12,40 +14,122 @@ from datetime import datetime, timezone
 
 main_bp = Blueprint('main', __name__)
 
-@main_bp.app_template_filter('icon_url')
-def icon_url(url):
-    if not url:
-        return ""
-    base, _ = os.path.splitext(url)
-    return f"{base}_icon.webp"
-
-@main_bp.app_template_filter('big_url')
-def big_url(url):
-    if not url:
-        return ""
-    base, _ = os.path.splitext(url)
-    if base.endswith("_big"):
-        return url
-    return f"{base}_big.webp"
-
 # Constants
 ADMIN_USER = 'admin' # Will be overridden by app config context if needed, but here we might need to access config.
 # Ideally, access config via current_app.config['APP_ADMIN_USER']
 
 @main_bp.route('/')
 def home():
-    return render_template('index.html')
+    categories = Category.query.order_by(Category.name).all()
+    # Fetch all published products with images and variants to avoid N+1 query issues
+    # Order by ID desc to show latest products
+    all_published_products = Product.query.filter_by(status='published').options(
+        joinedload(Product.images),
+        joinedload(Product.variants).joinedload(Variant.images)
+    ).order_by(Product.id.desc()).all()
+
+    # Group products by category in memory
+    products_by_category = defaultdict(list)
+    for prod in all_published_products:
+        products_by_category[prod.category].append(prod)
+
+    category_data = []
+    for cat in categories:
+        cat_products = products_by_category.get(cat.name, [])
+        if cat_products:
+            # Select up to 5 latest products per category
+            selected_products = cat_products[:5]
+            category_data.append({
+                'category': cat,
+                'products': selected_products
+            })
+
+    seo_metadata = {
+        'title': 'E-Commerce Pro - High Quality Products',
+        'description': 'Welcome to E-Commerce Pro, your one-stop shop for high-quality products delivered to your door.'
+    }
+    return render_template('index.html',
+                           category_data=category_data,
+                           seo_metadata=seo_metadata)
 
 @main_bp.route('/index')
 def index():
-    return render_template('index.html')
+    return redirect(url_for('main.home'))
 
+@main_bp.route('/product')
 @main_bp.route('/shop')
+@main_bp.route('/shop/category/<string:slug>')
+@main_bp.route('/shop/group/<string:slug>', endpoint='shop_group')
 @cache.cached(timeout=60, query_string=True)
-def shop_page():
-    # Only published products are visible
-    products = Product.query.filter_by(status='published').all()
-    return render_template('shop.html', products=products)
+def shop_page(slug=None):
+    category_name = request.args.get('category')
+    group_id = request.args.get('group_id', type=int)
+    q = request.args.get('q')
+
+    query = Product.query.filter_by(status='published')
+    seo_metadata = {}
+
+    # Handle SEO Slugs
+    if slug:
+        if request.endpoint == 'main.shop_group':
+            from ..models import ProductGroup
+            group = ProductGroup.query.filter_by(slug=slug, is_active=True).first_or_404()
+            query = query.join(Product.groups).filter(ProductGroup.id == group.id)
+            seo_metadata = {
+                'title': group.meta_title or f"{group.name} - Shop",
+                'description': group.meta_description or f"Explore our {group.name} collection.",
+                'heading': group.name
+            }
+        else:
+            category = Category.query.filter_by(slug=slug).first_or_404()
+            query = query.filter_by(category=category.name)
+            seo_metadata = {
+                'title': category.meta_title or f"{category.name} Products",
+                'description': category.meta_description or f"Shop the best {category.name} products.",
+                'heading': category.name
+            }
+    # Handle Query Params (Legacy/Search)
+    elif group_id:
+        from ..models import ProductGroup
+        group = ProductGroup.query.get(group_id)
+        if group:
+            query = query.join(Product.groups).filter(ProductGroup.id == group_id)
+            seo_metadata['heading'] = group.name
+    elif category_name:
+        if category_name.startswith('group:'):
+            from ..models import ProductGroup
+            group_slug = category_name.split(':', 1)[1]
+            group = ProductGroup.query.filter_by(slug=group_slug, is_active=True).first()
+            if group:
+                query = query.join(Product.groups).filter(ProductGroup.id == group.id)
+                seo_metadata.update({
+                    'title': group.meta_title or f"{group.name} - Shop",
+                    'description': group.meta_description or f"Explore our {group.name} collection.",
+                    'heading': group.name
+                })
+            else:
+                query = query.filter_by(category=category_name) # Fallback
+                seo_metadata['heading'] = category_name
+        else:
+            # Try to resolve category slug to name
+            c = Category.query.filter_by(slug=category_name).first()
+            if c:
+                query = query.filter_by(category=c.name)
+                seo_metadata.update({
+                    'title': c.meta_title or f"{c.name} Products",
+                    'description': c.meta_description or f"Shop the best {c.name} products.",
+                    'heading': c.name
+                })
+            else:
+                query = query.filter_by(category=category_name)
+                seo_metadata['heading'] = category_name
+
+    if q:
+        query = query.filter(Product.name.ilike(f"%{q}%"))
+        seo_metadata['heading'] = f"Search Results for '{q}'"
+
+    products = query.all()
+    return render_template('shop.html', products=products, seo_metadata=seo_metadata)
 
 @main_bp.route('/sitemap.xml')
 def sitemap():
@@ -68,11 +152,22 @@ def sitemap():
             'lastmod': datetime.now(timezone.utc).strftime('%Y-%m-%d') # Ideally product.updated_at
         })
 
-    # Category pages (if shop supports category filtering)
-    for c in categories:
-        if c.category:
+    # Category pages
+    db_categories = Category.query.all()
+    for c in db_categories:
+        if c.slug:
             pages.append({
-                'loc': url_for('main.shop_page', category=c.category, _external=True),
+                'loc': url_for('main.shop_page', slug=c.slug, _external=True),
+                'priority': '0.7'
+            })
+
+    # Group pages
+    from ..models import ProductGroup
+    groups = ProductGroup.query.filter_by(is_active=True).all()
+    for g in groups:
+        if g.slug:
+            pages.append({
+                'loc': url_for('main.shop_group', slug=g.slug, _external=True),
                 'priority': '0.7'
             })
 
@@ -85,20 +180,24 @@ def sitemap():
 def product_page(sku):
     # Only published products are visible
     product = Product.query.filter_by(product_sku=sku, status='published').first_or_404()
+
+    seo_metadata = {
+        'title': product.meta_title or product.name,
+        'description': product.meta_description or product.short_description
+    }
     user_review = None
     has_ordered = False
 
     if product and current_user.is_authenticated:
         user_review = Review.query.filter_by(user_id=current_user.id, product_id=product.id).first()
 
-        # Check if user has ordered this product via variant SKUs
-        variant_skus = [v.sku for v in product.variants]
-        has_ordered = db.session.query(OrderItem).join(Order).filter(
+        # Check if user has ordered this product
+        has_ordered = db.session.query(OrderItem).join(Order).join(Variant, OrderItem.variant_sku == Variant.sku).filter(
             Order.user_id == current_user.id,
-            OrderItem.variant_sku.in_(variant_skus)
+            Variant.product_id == product.id
         ).count() > 0
 
-    return render_template('product_detail.html', sku=sku, product=product, user_review=user_review, has_ordered=has_ordered)
+    return render_template('product_detail.html', sku=sku, product=product, user_review=user_review, has_ordered=has_ordered, seo_metadata=seo_metadata)
 
 @main_bp.route('/profile')
 @login_required

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const shippingMethods = document.querySelectorAll('input[name="shipping_method"]');
     const subtotalEl = document.getElementById('summary-subtotal');
     const discountEl = document.getElementById('summary-discount');

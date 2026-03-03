@@ -1,6 +1,6 @@
 from .extensions import db
-from .models import User, Product, Variant, ProductImage, VariantImage, Promotion, Country, ShippingZone, Category, GlobalSetting, AppCurrency
-from .utils import encrypt_password, generate_id, ensure_icon_for_url
+from .models import User, Product, Variant, ProductImage, VariantImage, Promotion, Country, ShippingZone, Category, GlobalSetting, AppCurrency, ProductGroup
+from .utils import encrypt_password, generate_id, ensure_icon_for_url, slugify
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -18,7 +18,7 @@ logger.addHandler(file_handler)
 # Constants
 RECREATE_IF_EXISTS = False
 BASE_IMAGE_URL = "/static/ec/products/img"
-PRODUCT_COUNT = 4
+PRODUCT_COUNT = 5
 COLORS = [
     {"name": "White", "code": "white", "prefix": "a", "price_modifier_pct": 0.0},
     {"name": "Red",   "code": "red",   "prefix": "b", "price_modifier_pct": 0.20},
@@ -37,12 +37,11 @@ def usd_to_cents(usd):
     d = Decimal(str(usd)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
     return int(d * 100)
 
-def create_product_data(product_key, category=None, name=None):
-    # New SKU format: T-Shirt_p-1_x5 (example, we'll just append random suffix)
-    import random
-    import string
-    suffix_p = f"{random.choice(string.ascii_lowercase)}{random.randint(0,9)}"
-    sku = f"{product_key}_{suffix_p}"
+def create_product_data(product_key, category=None, name=None, j=0, i=1):
+    # Predictable SKU format for tests
+    sku = product_key.upper()
+    if j > 0 or i > 1:
+        sku = f"{sku}-{j+1}-{i}"
 
     if not name:
         name = f"T-Shirt {product_key.upper()}"
@@ -52,13 +51,8 @@ def create_product_data(product_key, category=None, name=None):
 
     description = f"Comfortable cotton tee — design {product_key.upper()}."
     base_price_usd = BASE_PRICES_USD.get(product_key, 19.99)
-    # If product_key matches p-X pattern but we have multiple categories,
-    # we reuse the base prices.
     # Extract base key if possible (e.g. p-1 from p-1)
-    base_key = product_key.split('_')[0] if '_' in product_key else product_key
-    if base_key not in BASE_PRICES_USD and len(base_key) > 2:
-         # Try to match just p-X
-         pass
+    base_key = product_key#.split('-')[0] if '-' in product_key else product_key
 
     base_price_cents = usd_to_cents(base_price_usd)
     product_image_url = f"{BASE_IMAGE_URL}/{base_key}/a-1.webp"
@@ -75,11 +69,8 @@ def create_product_data(product_key, category=None, name=None):
         ]
 
         for size in SIZES:
-            # New Variant SKU format: ProductSKU_Color_Size_Suffix
-            # suffix: letter + 0-99
-            import string
-            suffix_v = f"{random.choice(string.ascii_lowercase)}{random.randint(0,99)}"
-            variant_sku = f"{sku}_{color_name}_{size}_{suffix_v}"
+            # Predictable Variant SKU format
+            variant_sku = f"{sku}-{color_name[:1].upper()}-{size}"
 
             price_modifier_cents = int(round(base_price_cents * modifier_pct))
             variants.append({
@@ -114,6 +105,7 @@ def create_product_data(product_key, category=None, name=None):
     return {
         "product_sku": sku,
         "name": name,
+        "slug": slugify(name),
         "category": category,
         "description": description,
         "short_description": f"Short desc for {sku}",
@@ -142,6 +134,7 @@ def insert_product(session, pdata):
     product = Product(
         product_sku=sku,
         name=pdata["name"],
+        slug=pdata.get("slug"),
         description=pdata.get("description"),
         short_description=pdata.get("short_description"),
         product_details=pdata.get("product_details"),
@@ -260,9 +253,9 @@ def setup_database(app):
         # Seed categories logic updated below in the product loop
         if not Category.query.first():
             db.session.add_all([
-                Category(name='Graphic Tees'),
-                Category(name='Accessories'),
-                Category(name='Apparel')
+                Category(name='Graphic Tees', slug='graphic-tees'),
+                Category(name='Accessories', slug='accessories'),
+                Category(name='Apparel', slug='apparel')
             ])
             db.session.commit()
 
@@ -283,9 +276,11 @@ def setup_database(app):
             product = Product(
                 product_sku='SAMPLE-SKU',
                 name='Sample Product',
+                slug='sample-product',
                 description='This is a sample product.',
                 category='Samples',
-                base_price_cents=12345
+                base_price_cents=12345,
+                status='published'
             )
             db.session.add(product)
             db.session.flush()
@@ -314,7 +309,7 @@ def setup_database(app):
 
                 # Ensure category exists
                 if not Category.query.filter_by(name=cat_name).first():
-                    db.session.add(Category(name=cat_name))
+                    db.session.add(Category(name=cat_name, slug=slugify(cat_name)))
                     db.session.commit()
 
                 # Create PRODUCT_COUNT products for EACH category
@@ -322,17 +317,30 @@ def setup_database(app):
                     # Cycle through base keys p-1..p-4
                     base_key = base_keys[(i-1) % len(base_keys)]
 
-                    name = f"T-Shirt {base_key.upper()} - {cat_name}"
+                    name = f"T-Shirt {base_key.upper()} - {cat_name} #{i}"
 
                     if Product.query.filter_by(name=name).first():
                         continue
 
-                    pdata = create_product_data(base_key, cat_name, name)
+                    pdata = create_product_data(base_key, cat_name, name, j, i)
 
                     prod = insert_product(db.session, pdata)
                     created.append(prod.product_sku)
 
                 db.session.commit()
+
+            if not ProductGroup.query.first():
+                featured = ProductGroup(name='Featured Collection', slug='featured-collection', is_active=True)
+                best_sellers = ProductGroup(name='Best Sellers', slug='best-sellers', is_active=True)
+                db.session.add_all([featured, best_sellers])
+                db.session.commit()
+
+                # Add some products to groups
+                all_prods = Product.query.filter_by(status='published').limit(12).all()
+                featured.products = all_prods[:8]
+                best_sellers.products = all_prods[4:12]
+                db.session.commit()
+
         except Exception as exc:
             db.session.rollback()
             logger.error(f"Error during seeding: {exc}")

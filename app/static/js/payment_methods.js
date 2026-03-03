@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const applyPromoBtn = document.getElementById('apply-promo-btn');
     const promoInput = document.getElementById('promo-code');
     const promoFeedback = document.getElementById('promo-feedback');
@@ -12,12 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const vatEl = document.getElementById('summary-vat');
     const totalEl = document.getElementById('summary-total');
 
-    function formatPrice(cents) {
+    async function formatPrice(cents) {
         const symbol = (window.appConfig && window.appConfig.currencySymbol) || '€';
         return `${symbol}${(cents / 100).toFixed(2)}`;
     }
 
-    function getCsrfToken() {
+    async function getCsrfToken() {
         const meta = document.querySelector('meta[name="csrf-token"]');
         return meta ? meta.content : '';
     }

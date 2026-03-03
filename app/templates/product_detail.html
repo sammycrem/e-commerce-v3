@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}{{ sku }} - {{ product.name if product else 'Product' }} | E-Commerce Pro{% endblock %}
+{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else (sku ~ ' - ' ~ (product.name if product else 'Product') ~ ' | E-Commerce Pro') }}{% endblock %}
 
 {% block meta_tags %}
 <meta name="description" content="{{ product.short_description if product and product.short_description else 'Product details' }}">
@@ -209,7 +209,7 @@
         </div>
 
         <!-- Info Column (33.3%) -->
-        <div class="col-lg-4 p-4 p-xl-5 bg-white">
+        <div class="col-lg-4 p-4 p-xl-5 bg-white" style="padding-top: 1rem !important;">
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb small">
                     <li class="breadcrumb-item"><a href="{{ url_for('main.home') }}" class="text-decoration-none">Home</a></li>
@@ -252,9 +252,9 @@
                 <div class="mb-4">
                     <label for="qty-input" class="form-label fw-bold small text-uppercase text-muted mb-2">Quantity</label>
                     <div class="input-group" style="width: 150px;">
-                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepDown()">-</button>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepDown()" aria-label="Decrease quantity">-</button>
                         <input id="qty-input" type="number" min="1" value="1" class="form-control text-center">
-                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepUp()">+</button>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepUp()" aria-label="Increase quantity">+</button>
                     </div>
                 </div>
 

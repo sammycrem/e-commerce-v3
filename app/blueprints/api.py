@@ -4,11 +4,11 @@
 
 from flask import Blueprint, jsonify, request, abort
 from flask_login import login_required, current_user
-from ..models import Product, Variant, ProductImage, VariantImage, Order, OrderItem, Promotion, Country, VatRate, ShippingZone, Category, GlobalSetting, AppCurrency, Message, Address, User, Review
+from ..models import Product, Variant, ProductImage, VariantImage, Order, OrderItem, Promotion, Country, VatRate, ShippingZone, Category, GlobalSetting, AppCurrency, Message, Address, User, Review, ProductGroup
 from ..extensions import db, cache, limiter
 from sqlalchemy.orm import joinedload
 from sqlalchemy import desc, func, case
-from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height
+from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height, serialize_group, serialize_category, slugify
 from ..product_service import products_to_csv, parse_products_file, _create_product_internal, _update_product_internal
 from ..seeder import setup_database
 import os
@@ -42,13 +42,30 @@ def list_products():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
     category = request.args.get('category', type=str)
+    group_id = request.args.get('group_id', type=int)
+    group_slug = request.args.get('group_slug', type=str)
 
-    query = Product.query.options(joinedload(Product.images), joinedload(Product.variants))
+    query = Product.query.options(
+        joinedload(Product.images),
+        joinedload(Product.variants).joinedload(Variant.images)
+    )
     # Public API: only published products
     query = query.filter_by(status='published')
 
-    if category:
-        query = query.filter_by(category=category)
+    if group_id or group_slug:
+        if not group_id:
+            g = ProductGroup.query.filter_by(slug=group_slug, is_active=True).first()
+            if g: group_id = g.id
+            else:
+                # Group requested but not found/active
+                return jsonify({"products": [], "total": 0, "page": page, "pages": 0}), 200
+
+        query = query.join(Product.groups).filter(ProductGroup.id == group_id)
+    elif category:
+        # Try to resolve category slug to name
+        c = Category.query.filter_by(slug=category).first()
+        cat_name = c.name if c else category
+        query = query.filter_by(category=cat_name)
 
     q = request.args.get('q', type=str)
     if q:
@@ -56,7 +73,7 @@ def list_products():
 
     paginated = query.order_by(Product.name).paginate(page=page, per_page=per_page, error_out=False)
     return jsonify({
-        "products": [serialize_product(p) for p in paginated.items],
+        "products": [serialize_product(p, include_reviews=False) for p in paginated.items],
         "total": paginated.total,
         "page": paginated.page,
         "pages": paginated.pages
@@ -81,7 +98,7 @@ def get_products_batch():
         joinedload(Product.images),
         joinedload(Product.variants)
     ).filter(Product.product_sku.in_(skus)).all()
-    product_map = {p.product_sku: serialize_product(p) for p in products}
+    product_map = {p.product_sku: serialize_product(p, include_reviews=False) for p in products}
     result = [product_map[sku] for sku in skus if sku in product_map]
     return jsonify(result), 200
 
@@ -175,7 +192,7 @@ def get_product_reviews(sku):
 @cache.cached(timeout=3600)
 def get_public_categories():
     categories = Category.query.order_by(Category.name).all()
-    return jsonify([{"id": c.id, "name": c.name} for c in categories]), 200
+    return jsonify([{"id": c.id, "name": c.name, "slug": c.slug} for c in categories]), 200
 
 @api_bp.route('/countries/public', methods=['GET'])
 @cache.cached(timeout=3600)
@@ -246,19 +263,31 @@ def admin_create_product():
 def admin_list_products():
     check_admin()
     status_filter = request.args.get('status')
-    query = Product.query.options(joinedload(Product.images), joinedload(Product.variants)).order_by(Product.name)
+    q = request.args.get('q')
+
+    query = Product.query.options(
+        joinedload(Product.images),
+        joinedload(Product.variants).joinedload(Variant.images)
+    ).order_by(Product.name)
 
     if status_filter and status_filter != 'all':
         query = query.filter_by(status=status_filter)
 
+    if q:
+        query = query.filter(Product.name.ilike(f"%{q}%"))
+
     products = query.all()
-    return jsonify([serialize_product(p) for p in products]), 200
+    return jsonify([serialize_product(p, include_reviews=False) for p in products]), 200
 
 @api_bp.route('/admin/products/<string:sku>', methods=['GET'])
 @login_required
 def admin_get_product(sku):
     check_admin()
-    product = Product.query.options(joinedload(Product.images), joinedload(Product.variants).joinedload(Variant.images)).filter_by(product_sku=sku).first_or_404()
+    product = Product.query.options(
+        joinedload(Product.images),
+        joinedload(Product.reviews),
+        joinedload(Product.variants).joinedload(Variant.images)
+    ).filter_by(product_sku=sku).first_or_404()
     return jsonify(serialize_product(product)), 200
 
 @api_bp.route('/admin/products/<string:sku>', methods=['PUT'])
@@ -298,6 +327,7 @@ def admin_update_product(sku):
 
 @api_bp.route('/admin/products/<string:sku>', methods=['DELETE'])
 @login_required
+@limiter.exempt
 def admin_delete_product(sku):
     check_admin()
     product = Product.query.filter_by(product_sku=sku).first()
@@ -416,8 +446,22 @@ def admin_list_orders():
 
     paginated = query.paginate(page=page, per_page=per_page, error_out=False)
 
+    # Bulk fetch unread message counts for the current page
+    order_ids = [o.id for o in paginated.items]
+    unread_counts_map = {}
+    if order_ids:
+        unread_counts = db.session.query(
+            Message.order_id,
+            func.count(Message.id).label('count')
+        ).filter(
+            Message.order_id.in_(order_ids),
+            Message.sender_type == 'USER',
+            Message.is_read == False
+        ).group_by(Message.order_id).all()
+        unread_counts_map = {r.order_id: r.count for r in unread_counts}
+
     def serialize_order_summary(o):
-        unread_count = Message.query.filter_by(order_id=o.id, sender_type='USER', is_read=False).count()
+        unread_count = unread_counts_map.get(o.id, 0)
         return {
             "id": o.id,
             "public_order_id": o.public_order_id,
@@ -575,7 +619,7 @@ def admin_update_order_shipment(public_order_id):
 def admin_list_categories():
     check_admin()
     categories = Category.query.order_by(Category.name).all()
-    return jsonify([{"id": c.id, "name": c.name} for c in categories]), 200
+    return jsonify([serialize_category(c) for c in categories]), 200
 
 @api_bp.route('/admin/categories', methods=['POST'])
 @login_required
@@ -585,10 +629,15 @@ def admin_create_category():
     name = data.get('name', '').strip()
     if not name: return jsonify({"error": "Name required"}), 400
     if Category.query.filter_by(name=name).first(): return jsonify({"error": "Exists"}), 409
-    c = Category(name=name)
+    c = Category(
+        name=name,
+        slug=data.get('slug'),
+        meta_title=data.get('meta_title'),
+        meta_description=data.get('meta_description')
+    )
     db.session.add(c)
     db.session.commit()
-    return jsonify({"id": c.id, "name": c.name}), 201
+    return jsonify(serialize_category(c)), 201
 
 @api_bp.route('/admin/categories/<int:id>', methods=['PUT', 'DELETE'])
 @login_required
@@ -607,9 +656,126 @@ def admin_modify_category(id):
         if not name: return jsonify({"error": "Name required"}), 400
         existing = Category.query.filter_by(name=name).first()
         if existing and existing.id != id: return jsonify({"error": "Exists"}), 409
+
         c.name = name
+        c.slug = data.get('slug', c.slug)
+        c.meta_title = data.get('meta_title', c.meta_title)
+        c.meta_description = data.get('meta_description', c.meta_description)
+
         db.session.commit()
-        return jsonify({"id": c.id, "name": c.name}), 200
+        return jsonify(serialize_category(c)), 200
+
+# -------------------------------------------------------------------------
+# Product Group Admin APIs
+# -------------------------------------------------------------------------
+
+@api_bp.route('/admin/product-groups', methods=['GET'])
+@login_required
+def admin_list_product_groups():
+    check_admin()
+    groups = ProductGroup.query.order_by(ProductGroup.name).all()
+    return jsonify([serialize_group(g) for g in groups]), 200
+
+@api_bp.route('/admin/product-groups', methods=['POST'])
+@login_required
+def admin_create_product_group():
+    check_admin()
+    data = request.get_json() or {}
+    name = data.get('name', '').strip()
+    if not name:
+        return jsonify({"error": "Group name is required"}), 400
+    if ProductGroup.query.filter_by(name=name).first():
+        return jsonify({"error": "Group already exists"}), 409
+
+    slug = data.get('slug') or slugify(name)
+    group = ProductGroup(
+        name=name,
+        slug=slug,
+        is_active=bool(data.get('is_active', False)),
+        meta_title=data.get('meta_title'),
+        meta_description=data.get('meta_description')
+    )
+
+    if 'product_skus' in data:
+        skus = data['product_skus']
+        products = Product.query.filter(Product.product_sku.in_(skus)).all()
+        group.products = products
+
+    db.session.add(group)
+    db.session.commit()
+    return jsonify(serialize_group(group)), 201
+
+@api_bp.route('/admin/product-groups/<int:group_id>', methods=['GET'])
+@login_required
+def admin_get_product_group(group_id):
+    check_admin()
+    group = ProductGroup.query.get_or_404(group_id)
+    return jsonify(serialize_group(group)), 200
+
+@api_bp.route('/admin/product-groups/<int:group_id>', methods=['PUT'])
+@login_required
+def admin_update_product_group(group_id):
+    check_admin()
+    group = ProductGroup.query.get_or_404(group_id)
+    data = request.get_json() or {}
+
+    if 'name' in data:
+        name = data['name'].strip()
+        if not name:
+            return jsonify({"error": "Group name is required"}), 400
+        existing = ProductGroup.query.filter_by(name=name).first()
+        if existing and existing.id != group_id:
+            return jsonify({"error": "Another group with this name already exists"}), 409
+        group.name = name
+
+    if 'is_active' in data:
+        group.is_active = bool(data['is_active'])
+
+    if 'slug' in data:
+        group.slug = data['slug'] or slugify(group.name)
+
+    if 'meta_title' in data:
+        group.meta_title = data['meta_title']
+
+    if 'meta_description' in data:
+        group.meta_description = data['meta_description']
+
+    if 'product_skus' in data:
+        skus = data['product_skus']
+        products = Product.query.filter(Product.product_sku.in_(skus)).all()
+        group.products = products
+
+    db.session.commit()
+    return jsonify(serialize_group(group)), 200
+
+@api_bp.route('/admin/product-groups/<int:group_id>', methods=['DELETE'])
+@login_required
+def admin_delete_product_group(group_id):
+    check_admin()
+    group = ProductGroup.query.get_or_404(group_id)
+    db.session.delete(group)
+    db.session.commit()
+    return jsonify({"message": "Product group deleted"}), 200
+
+@api_bp.route('/admin/product-groups/<int:group_id>/add-product-sku', methods=['POST'])
+@login_required
+def admin_add_product_to_group_by_sku(group_id):
+    check_admin()
+    group = ProductGroup.query.get_or_404(group_id)
+    data = request.get_json() or {}
+    sku = data.get('sku', '').strip()
+    if not sku:
+        return jsonify({"error": "Product SKU is required"}), 400
+
+    product = Product.query.filter_by(product_sku=sku).first()
+    if not product:
+        return jsonify({"error": "Product not found"}), 404
+
+    if product not in group.products:
+        group.products.append(product)
+        db.session.commit()
+
+    return jsonify(serialize_group(group)), 200
 
 @api_bp.route('/admin/products/export', methods=['GET'])
 @login_required
@@ -667,6 +833,7 @@ def admin_import_products():
         return jsonify({"message": "Import successful"}), 200
     except Exception as e:
         db.session.rollback()
+        traceback.print_exc()
         return jsonify({"error": f"Import failed: {str(e)}"}), 500
 
 # Additional Admin APIs (Settings, Currencies, Users, Promotions)

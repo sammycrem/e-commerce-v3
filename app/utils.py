@@ -23,7 +23,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from PIL import Image
 import shutil
-
+from decimal import Decimal, ROUND_HALF_UP
 
 
 logger = logging.getLogger(__name__)
@@ -612,7 +612,7 @@ def ensure_icon_for_url(url, app_root_path):
     # 3. Check/Create Big (height 600)
     big_path = base + "_big.webp"
     if not os.path.exists(big_path):
-        generate_image_icon(input_path, big_path, height=600)
+        generate_image_icon(input_path, big_path, height=400)
 # ---------end------------
 
 def rename_image(old_name, new_name, upload_folder):
@@ -713,6 +713,13 @@ def is_valid_image(file_path):
 
 def translate(word, language, name):
    return 'Welcome to ' + name
+# ---------end------------
+
+def slugify(text):
+    import re
+    text = text.lower()
+    text = re.sub(r'[^a-z0-9]+', '-', text)
+    return text.strip('-')
 # ---------end------------
 
 def get_folders_in_directory(directory_path):
@@ -1163,7 +1170,6 @@ def compute_shipping_cost_for_cart(cart_items: list, shipping_zone):
 
 
 
-from decimal import Decimal, ROUND_HALF_UP
 from .extensions import db
 
 def decimal_to_cents(d: Decimal) -> int:
@@ -1227,11 +1233,14 @@ def serialize_review(review):
         "created_at": review.created_at.isoformat()
     }
 
-def serialize_product(product):
-    return {
+def serialize_product(product, include_reviews=True):
+    data = {
         "product_sku": product.product_sku,
         "name": product.name,
+        "slug": product.slug,
         "description": product.description,
+        "meta_title": product.meta_title,
+        "meta_description": product.meta_description,
         "category": product.category,
         "base_price_cents": product.base_price_cents,
         "short_description": product.short_description,
@@ -1249,9 +1258,11 @@ def serialize_product(product):
         "average_rating": product.average_rating,
         "review_count": product.review_count,
         "images": [serialize_image(img) for img in product.images],
-        "variants": [serialize_variant(var) for var in product.variants],
-        "reviews": [serialize_review(r) for r in product.reviews]
+        "variants": [serialize_variant(var) for var in product.variants]
     }
+    if include_reviews:
+        data["reviews"] = [serialize_review(r) for r in product.reviews]
+    return data
 
 def serialize_promotion(promo):
     return {
@@ -1330,3 +1341,37 @@ def process_loyalty_reward(order):
     db.session.add(promo)
     db.session.commit()
     logger.info(f"Granted loyalty reward {reward_cents} cents to user {order.user_id} for order {order.public_order_id}")
+
+def serialize_category(category):
+    return {
+        "id": category.id,
+        "name": category.name,
+        "slug": category.slug,
+        "meta_title": category.meta_title,
+        "meta_description": category.meta_description
+    }
+
+def serialize_group(group):
+    return {
+        "id": group.id,
+        "name": group.name,
+        "slug": group.slug,
+        "is_active": group.is_active,
+        "meta_title": group.meta_title,
+        "meta_description": group.meta_description,
+        "products": [serialize_product(p, include_reviews=False) for p in group.products]
+    }
+
+def icon_url(url):
+    if not url: return ""
+    if '/static/' not in url: return url
+    base, _ = os.path.splitext(url)
+    if base.endswith("_icon") or base.endswith("_big"): return url
+    return base + "_icon.webp"
+
+def big_url(url):
+    if not url: return ""
+    if '/static/' not in url: return url
+    base, _ = os.path.splitext(url)
+    if base.endswith("_icon") or base.endswith("_big"): return url
+    return base + "_big.webp"

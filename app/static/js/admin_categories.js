@@ -18,12 +18,15 @@
 
   function $(sel) { return document.querySelector(sel); }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const categoryList = $('#category-list');
     const saveBtn = $('#save-category');
     const delBtn = $('#delete-category');
     const newBtn = $('#btn-new-category');
     const catNameInput = $('#cat_name');
+    const catSlugInput = $('#cat_slug');
+    const catMetaTitleInput = $('#cat_meta_title');
+    const catMetaDescriptionInput = $('#cat_meta_description');
     const editorTitle = $('#category-editor-title');
 
     if (!categoryList) return;
@@ -37,15 +40,17 @@
             class: 'list-group-item list-group-item-action',
             type: 'button'
         }, cat.name);
-        item.onclick = () => {
+        item.onclick = async () => {
           catNameInput.value = cat.name;
+          catSlugInput.value = cat.slug || '';
+          catMetaTitleInput.value = cat.meta_title || '';
+          catMetaDescriptionInput.value = cat.meta_description || '';
           saveBtn.dataset.id = cat.id;
           editorTitle.textContent = 'Edit Category: ' + cat.name;
         };
         categoryList.appendChild(item);
       });
 
-      // Also trigger a refresh of product category dropdown if it exists
       if (window.refreshProductCategories) {
           window.refreshProductCategories(data);
       }
@@ -53,13 +58,19 @@
 
     newBtn.onclick = () => {
       catNameInput.value = '';
+      catSlugInput.value = '';
+      catMetaTitleInput.value = '';
+      catMetaDescriptionInput.value = '';
       delete saveBtn.dataset.id;
       editorTitle.textContent = 'Add New Category';
     };
 
     saveBtn.onclick = async () => {
       const name = catNameInput.value.trim();
-      if (!name) return alert('Category name is required');
+      const slug = catSlugInput.value.trim();
+      const meta_title = catMetaTitleInput.value.trim();
+      const meta_description = catMetaDescriptionInput.value.trim();
+      if (!name) return await alert('Category name is required');
 
       const id = saveBtn.dataset.id;
       const method = id ? 'PUT' : 'POST';
@@ -72,22 +83,27 @@
       const res = await fetch(url, {
         method,
         headers,
-        body: JSON.stringify({ name })
+        body: JSON.stringify({
+            name,
+            slug,
+            meta_title,
+            meta_description
+        })
       });
 
       if (res.ok) {
-        loadCategories();
+        await loadCategories();
         newBtn.onclick();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to save category');
+        await alert(err.error || 'Failed to save category');
       }
     };
 
     delBtn.onclick = async () => {
       const id = saveBtn.dataset.id;
-      if (!id) return alert('Select a category to delete');
-      if (!confirm('Are you sure? Products using this category might prevent deletion.')) return;
+      if (!id) return await alert('Select a category to delete');
+      if (!await confirm('Are you sure? Products using this category might prevent deletion.')) return;
 
       const headers = {};
       const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -95,15 +111,15 @@
 
       const res = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE', headers });
       if (res.ok) {
-        loadCategories();
+        await loadCategories();
         newBtn.onclick();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to delete category');
+        await alert(err.error || 'Failed to delete category');
       }
     };
 
-    loadCategories();
+    await loadCategories();
     window.refreshAllCategories = loadCategories;
   });
 })();

@@ -26,7 +26,10 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     product_sku = db.Column(db.Text, nullable=False, unique=True)
     name = db.Column(db.Text, nullable=False)
+    slug = db.Column(db.String(255), unique=True, index=True)
     description = db.Column(db.Text)
+    meta_title = db.Column(db.String(255))
+    meta_description = db.Column(db.Text)
     category = db.Column(db.Text, index=True) # Indexed
     base_price_cents = db.Column(db.BigInteger, nullable=False)
     short_description = db.Column(db.Text)
@@ -170,10 +173,28 @@ class ShippingZone(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
+product_group_association = db.Table('product_group_association',
+    db.Column('product_id', db.Integer, db.ForeignKey('products.id', ondelete='CASCADE'), primary_key=True),
+    db.Column('group_id', db.Integer, db.ForeignKey('product_groups.id', ondelete='CASCADE'), primary_key=True)
+)
+
+class ProductGroup(db.Model):
+    __tablename__ = 'product_groups'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    slug = db.Column(db.String(120), unique=True, index=True)
+    is_active = db.Column(db.Boolean, default=False)
+    meta_title = db.Column(db.String(255))
+    meta_description = db.Column(db.Text)
+    products = db.relationship('Product', secondary=product_group_association, backref=db.backref('groups', lazy='dynamic'))
+
 class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
+    slug = db.Column(db.String(120), unique=True, index=True)
+    meta_title = db.Column(db.String(255))
+    meta_description = db.Column(db.Text)
 
 class GlobalSetting(db.Model):
     __tablename__ = 'global_settings'

@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const galleryGrid = document.getElementById('gallery-grid');
     const galleryFilter = document.getElementById('gallery-filter');
     const refreshBtn = document.getElementById('btn-refresh-gallery');
@@ -15,6 +15,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('gallery-file-input');
     const filenameInput = document.getElementById('gallery-filename-input');
     const confirmUploadBtn = document.getElementById('btn-gallery-upload-confirm');
+
+    // Folder Upload Elements
+    const uploadFolderBtn = document.getElementById('btn-upload-folder-gallery');
+    const folderModalEl = document.getElementById('galleryFolderUploadModal');
+    let folderModal;
+    if (folderModalEl && window.bootstrap) {
+        folderModal = new bootstrap.Modal(folderModalEl);
+    }
+    const folderInput = document.getElementById('gallery-folder-input');
+    const folderOptions = document.getElementById('folder-upload-options');
+    const nameRenameRadio = document.getElementById('nameRename');
+    const prefixContainer = document.getElementById('folder-prefix-container');
+    const prefixInput = document.getElementById('gallery-folder-prefix');
+    const progressContainer = document.getElementById('folder-upload-progress-container');
+    const progressBar = document.getElementById('folder-upload-progress-bar');
+    const progressStats = document.getElementById('folder-upload-stats');
+    const progressStatus = document.getElementById('folder-upload-status');
+    const confirmFolderUploadBtn = document.getElementById('btn-gallery-folder-upload-confirm');
 
     if (!galleryGrid) return; // Only run if element exists
 
@@ -44,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderGallery() {
+    async function renderGallery() {
         galleryGrid.innerHTML = '';
         const filter = galleryFilter.value; // all, unused, linked
 
@@ -195,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function deletePhoto(filename) {
-        if (!confirm(`Delete ${filename}? This includes _icon and _big variants.`)) return;
+        if (!await confirm(`Delete ${filename}? This includes _icon and _big variants.`)) return;
 
         try {
             const headers = {};
@@ -213,17 +231,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderGallery();
             } else {
                 const data = await res.json();
-                alert(data.error || 'Delete failed');
+                await alert(data.error || 'Delete failed');
             }
         } catch (err) {
             console.error(err);
-            alert('Delete failed');
+            await alert('Delete failed');
         }
     }
 
     // --- Upload Logic ---
     if (uploadBtn && uploadModal) {
-        uploadBtn.addEventListener('click', () => {
+        uploadBtn.addEventListener('click', async () => {
             fileInput.value = '';
             filenameInput.value = '';
             uploadModal.show();
@@ -246,11 +264,134 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Folder Upload Logic ---
+    if (uploadFolderBtn && folderModal) {
+        uploadFolderBtn.addEventListener('click', async () => {
+            folderInput.value = '';
+            folderOptions.classList.add('d-none');
+            progressContainer.classList.add('d-none');
+            confirmFolderUploadBtn.disabled = true;
+            confirmFolderUploadBtn.textContent = 'Start Upload';
+            isFolderUploadFinished = false;
+            folderModal.show();
+        });
+    }
+
+    if (folderInput) {
+        folderInput.addEventListener('change', () => {
+            const files = Array.from(folderInput.files).filter(f => f.type.startsWith('image/'));
+            if (files.length > 0) {
+                folderOptions.classList.remove('d-none');
+                confirmFolderUploadBtn.disabled = false;
+                progressStatus.textContent = `${files.length} images selected.`;
+            } else {
+                folderOptions.classList.add('d-none');
+                confirmFolderUploadBtn.disabled = true;
+                progressStatus.textContent = 'No images found in folder.';
+            }
+        });
+    }
+
+    // Toggle prefix container
+    document.querySelectorAll('input[name="folderNamingMode"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (nameRenameRadio.checked) {
+                prefixContainer.classList.remove('d-none');
+            } else {
+                prefixContainer.classList.add('d-none');
+            }
+        });
+    });
+
+    let isFolderUploadFinished = false;
+
+    if (confirmFolderUploadBtn) {
+        confirmFolderUploadBtn.addEventListener('click', async () => {
+            if (isFolderUploadFinished) {
+                folderModal.hide();
+                return;
+            }
+
+            const allFiles = Array.from(folderInput.files).filter(f => f.type.startsWith('image/'));
+            if (allFiles.length === 0) return;
+
+            const namingMode = document.querySelector('input[name="folderNamingMode"]:checked').value;
+            const prefix = prefixInput.value.trim();
+
+            if (namingMode === 'rename' && !prefix) {
+                await alert("Please enter a prefix for renaming.");
+                return;
+            }
+
+            confirmFolderUploadBtn.disabled = true;
+            progressContainer.classList.remove('d-none');
+
+            const total = allFiles.length;
+            let successCount = 0;
+            let errorCount = 0;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+            for (let i = 0; i < total; i++) {
+                const file = allFiles[i];
+                let customName = "";
+
+                if (namingMode === 'rename') {
+                    // prefix_01, prefix_02...
+                    const index = (i + 1).toString().padStart(Math.max(2, total.toString().length), '0');
+                    customName = `${prefix}_${index}`;
+                } else {
+                    // Original name without extension
+                    customName = file.name.split('.').slice(0, -1).join('.');
+                }
+
+                progressStatus.textContent = `Uploading ${file.name}...`;
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('custom_name', customName);
+
+                try {
+                    const headers = {};
+                    if (csrfToken) headers['X-CSRFToken'] = csrfToken;
+
+                    const res = await fetch('/api/admin/upload-image', {
+                        method: 'POST',
+                        headers: headers,
+                        body: formData
+                    });
+
+                    if (res.ok) {
+                        successCount++;
+                    } else {
+                        errorCount++;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    errorCount++;
+                }
+
+                // Update Progress
+                const percent = Math.round(((i + 1) / total) * 100);
+                progressBar.style.width = `${percent}%`;
+                progressStats.textContent = `${i + 1}/${total}`;
+            }
+
+            progressStatus.textContent = `Upload complete. ${successCount} success, ${errorCount} failed.`;
+            confirmFolderUploadBtn.textContent = 'Done';
+            confirmFolderUploadBtn.disabled = false;
+            isFolderUploadFinished = true;
+
+            // Reload gallery
+            loadGallery();
+        });
+    }
+
     if (confirmUploadBtn) {
         confirmUploadBtn.addEventListener('click', async () => {
             const file = fileInput.files[0];
             if (!file) {
-                alert("Please select a file");
+                await alert("Please select a file");
                 return;
             }
 
@@ -281,11 +422,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Reload gallery
                     loadGallery();
                 } else {
-                    alert(data.error || 'Upload failed');
+                    await alert(data.error || 'Upload failed');
                 }
             } catch (err) {
                 console.error(err);
-                alert('Upload error');
+                await alert('Upload error');
             } finally {
                 confirmUploadBtn.disabled = false;
                 confirmUploadBtn.textContent = 'Upload';

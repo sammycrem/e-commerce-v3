@@ -1,10 +1,7 @@
+// static/js/admin.js
 // admin.js (fixed) - builds JSON and posts to /api/products
-// Key fixes:
-//  - product image rows and variant image rows are tagged with data-role,
-//    and inputs have specific classes so collection is robust.
-//  - variant.images are collected reliably and included in payload.
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   const imagesContainer = document.getElementById('product-images');
   const addImageBtn = document.getElementById('add-product-image');
   const variantsContainer = document.getElementById('variants');
@@ -12,12 +9,12 @@ window.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById('submit-product');
   const feedback = document.getElementById('admin-feedback');
 
-  // small helper to create element with attrs
   function el(tag, attrs = {}, ...children) {
     const e = document.createElement(tag);
     for (const k in attrs) {
       if (k === 'class') e.className = attrs[k];
       else if (k === 'html') e.innerHTML = attrs[k];
+      else if (k === 'for') e.htmlFor = attrs[k];
       else e.setAttribute(k, attrs[k]);
     }
     children.forEach(c => {
@@ -27,7 +24,6 @@ window.addEventListener('DOMContentLoaded', () => {
     return e;
   }
 
-  // PRODUCT IMAGE ROWS (tagged with data-role="product-image")
   function addProductImageRow(url = '', alt = '', order = 0) {
     const row = document.createElement('div');
     row.className = 'image-row';
@@ -47,35 +43,22 @@ window.addEventListener('DOMContentLoaded', () => {
     row.appendChild(altIn);
     row.appendChild(ordIn);
     row.appendChild(del);
-
     imagesContainer.appendChild(row);
   }
 
-  // VARIANT ROWS (each variant has a .variant-fields wrapper)
-  function addVariantRow(prefill = {}) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'variant-fields';
+  function addVariantRow() {
+    const wrapper = el('div', { class: 'variant-fields', style: 'border:1px solid #eee; padding:10px; margin-bottom:10px;' });
 
-    const sku = el('input', { type: 'text', class: 'form-input variant-sku', placeholder: 'Variant SKU' });
-    sku.value = prefill.sku || '';
+    const skuIn = el('input', { type: 'text', class: 'form-input variant-sku', placeholder: 'Variant SKU' });
+    const colorIn = el('input', { type: 'text', class: 'form-input variant-color', placeholder: 'Color' });
+    const sizeIn = el('input', { type: 'text', class: 'form-input variant-size', placeholder: 'Size' });
+    const stockIn = el('input', { type: 'number', class: 'form-input variant-stock', placeholder: 'Stock' });
+    const pmIn = el('input', { type: 'text', class: 'form-input variant-price-mod', placeholder: 'Price mod' });
 
-    const color = el('input', { type: 'text', class: 'form-input variant-color', placeholder: 'Color' });
-    color.value = prefill.color || '';
+    const vImgs = el('div', { class: 'variant-images' });
+    const addVImgBtn = el('button', { class: 'btn btn-sm', type: 'button' }, 'Add Variant Image');
 
-    const size = el('input', { type: 'text', class: 'form-input variant-size', placeholder: 'Size' });
-    size.value = prefill.size || '';
-
-    const stock = el('input', { type: 'number', class: 'form-input variant-stock', placeholder: 'Stock', value: prefill.stock || 0 });
-
-    const priceMod = el('input', { type: 'text', class: 'form-input variant-price-mod', placeholder: 'Price modifier (e.g. 1.50)' });
-    priceMod.value = prefill.price_mod || '0.00';
-
-    // variant images container
-    const vImgs = document.createElement('div');
-    vImgs.className = 'variant-images';
-
-    const addVImgBtn = el('button', { class: 'btn', type: 'button' }, 'Add variant image');
-    addVImgBtn.addEventListener('click', () => {
+    function addVariantImageRow() {
       const r = document.createElement('div');
       r.className = 'variant-image-row';
       r.setAttribute('data-role', 'variant-image');
@@ -92,41 +75,29 @@ window.addEventListener('DOMContentLoaded', () => {
       r.appendChild(o);
       r.appendChild(d);
       vImgs.appendChild(r);
-    });
+    }
 
-    const removeBtn = el('button', { class: 'btn btn-danger', type: 'button' }, 'Remove Variant');
-    removeBtn.addEventListener('click', () => wrapper.remove());
+    addVImgBtn.addEventListener('click', () => addVariantImageRow());
 
-    // Build wrapper DOM
-    wrapper.appendChild(el('label', {}, 'Variant SKU'));
-    wrapper.appendChild(sku);
-    wrapper.appendChild(el('label', {}, 'Color'));
-    wrapper.appendChild(color);
-    wrapper.appendChild(el('label', {}, 'Size'));
-    wrapper.appendChild(size);
-    wrapper.appendChild(el('label', {}, 'Stock quantity'));
-    wrapper.appendChild(stock);
-    wrapper.appendChild(el('label', {}, 'Price modifier in USD (e.g. 1.50)'));
-    wrapper.appendChild(priceMod);
+    const removeVar = el('button', { class: 'btn btn-danger', type: 'button' }, 'Remove Variant');
+    removeVar.addEventListener('click', () => wrapper.remove());
 
-    // Variant images section
-    const vImagesContainer = el('div', {}, vImgs, addVImgBtn);
-    wrapper.appendChild(vImagesContainer);
-    wrapper.appendChild(removeBtn);
+    wrapper.appendChild(el('label', {}, 'SKU')); wrapper.appendChild(skuIn);
+    wrapper.appendChild(el('label', {}, 'Color')); wrapper.appendChild(colorIn);
+    wrapper.appendChild(el('label', {}, 'Size')); wrapper.appendChild(sizeIn);
+    wrapper.appendChild(el('label', {}, 'Stock')); wrapper.appendChild(stockIn);
+    wrapper.appendChild(el('label', {}, 'Price Mod')); wrapper.appendChild(pmIn);
+    wrapper.appendChild(vImgs);
+    wrapper.appendChild(addVImgBtn);
+    wrapper.appendChild(removeVar);
 
     variantsContainer.appendChild(wrapper);
   }
 
-  // Bind add buttons
-  addImageBtn.addEventListener('click', () => addProductImageRow());
-  addVariantBtn.addEventListener('click', () => addVariantRow());
+  if (addImageBtn) addImageBtn.addEventListener('click', () => addProductImageRow());
+  if (addVariantBtn) addVariantBtn.addEventListener('click', () => addVariantRow());
 
-  // Add one default row for convenience
-  addVariantRow();
-  addProductImageRow();
-
-  // SUBMIT HANDLER (collects product images + variants + variant images robustly)
-  submitBtn.addEventListener('click', async () => {
+  if (submitBtn) submitBtn.addEventListener('click', async () => {
     feedback.style.display = 'none';
     feedback.className = 'feedback';
 
@@ -135,18 +106,15 @@ window.addEventListener('DOMContentLoaded', () => {
       variants: []
     };
 
-    // Basic product fields
     payload.product_sku = (document.getElementById('product_sku') || {}).value?.trim?.() || '';
     payload.name = (document.getElementById('name') || {}).value?.trim?.() || '';
     payload.category = (document.getElementById('category') || {}).value?.trim?.() || '';
     payload.description = (document.getElementById('description') || {}).value?.trim?.() || '';
 
-    // Price -> cents
     const basePriceStr = (document.getElementById('base_price') || {}).value || '0';
     const basePriceFloat = parseFloat(basePriceStr.replace(',', '.')) || 0;
     payload.base_price_cents = Math.round(basePriceFloat * 100);
 
-    // Collect product images reliably
     imagesContainer.querySelectorAll('[data-role="product-image"]').forEach(row => {
       const urlEl = row.querySelector('.img-url');
       if (!urlEl) return;
@@ -157,10 +125,9 @@ window.addEventListener('DOMContentLoaded', () => {
       payload.images.push({ url, alt_text: alt, order });
     });
 
-    // Collect variants
     document.querySelectorAll('.variant-fields').forEach(v => {
       const sku = (v.querySelector('.variant-sku') || {}).value?.trim?.() || '';
-      if (!sku) return; // skip incomplete variant
+      if (!sku) return;
 
       const color = (v.querySelector('.variant-color') || {}).value?.trim?.() || '';
       const size = (v.querySelector('.variant-size') || {}).value?.trim?.() || '';
@@ -178,7 +145,6 @@ window.addEventListener('DOMContentLoaded', () => {
         images: []
       };
 
-      // Collect variant images inside this variant
       v.querySelectorAll('[data-role="variant-image"]').forEach(imgRow => {
         const url = (imgRow.querySelector('.img-url') || {}).value?.trim?.() || '';
         if (!url) return;
@@ -190,7 +156,6 @@ window.addEventListener('DOMContentLoaded', () => {
       payload.variants.push(variant);
     });
 
-    // Validate minimal fields
     if (!payload.product_sku || !payload.name || payload.variants.length === 0) {
       feedback.style.display = 'block';
       feedback.className = 'feedback error';
@@ -198,7 +163,6 @@ window.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // POST payload
     try {
       const resp = await fetch('/api/products', {
         method: 'POST',
@@ -219,7 +183,6 @@ window.addEventListener('DOMContentLoaded', () => {
       feedback.className = 'feedback success';
       feedback.textContent = `Product created: ${data.product_sku || data.name || ''}`;
 
-      // Redirect to product page after a short delay
       setTimeout(() => {
         window.location.href = `/product/${encodeURIComponent(payload.product_sku)}`;
       }, 800);

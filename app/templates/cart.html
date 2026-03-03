@@ -45,14 +45,14 @@
                             <th scope="col"></th>
                         </tr>
                     </thead>
-                    <tbody id="cart-container">
+                    <tbody id="cart-items-container">
                         <!-- Cart items will be injected here by cart.js -->
                     </tbody>
                 </table>
             </div>
             <div class="d-flex justify-content-between mb-4">
-                <button class="btn btn-outline-secondary continue-shopping">Continue Shopping</button>
-                <button class="btn btn-outline-danger clear-cart">Clear Shopping Cart</button>
+                <a href="/shop" class="btn btn-outline-secondary continue-shopping">Continue Shopping</a>
+                <button id="clear-cart-btn" class="btn btn-outline-danger">Clear Shopping Cart</button>
             </div>
         </div>
 
@@ -62,12 +62,12 @@
                     <h2 class="h4 mb-4">Summary</h2>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Subtotal</span>
-                        <span id="summary-subtotal" class="fw-bold">{{ currency_symbol }}0.00</span>
+                        <span id="cart-subtotal" class="fw-bold product-price" data-base-price-cents="0">{{ currency_symbol }}0.00</span>
                     </div>
 
                     <div class="d-flex justify-content-between border-top pt-3 mb-4 mt-3">
-                        <span id="total-label" class="h5 mb-0 fw-bold">Total Due Excl. Tax</span>
-                        <span id="summary-total" class="h5 mb-0 fw-bold text-primary">{{ currency_symbol }}0.00</span>
+                        <span id="total-label" class="h5 mb-0 fw-bold">Total Due</span>
+                        <span id="summary-total" class="h5 mb-0 fw-bold text-primary product-price" data-base-price-cents="0">{{ currency_symbol }}0.00</span>
                     </div>
 
                     <a id="checkout-btn" href="#" class="btn btn-primary btn-lg w-100 fw-bold" data-is-authenticated="{{ 'true' if current_user.is_authenticated else 'false' }}">PROCEED TO CHECKOUT</a>
