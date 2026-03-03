@@ -72,7 +72,7 @@
         margin-left: auto;
         margin-right: auto;
         border-radius: 15px;
-        padding: 20px 0;
+
     }
 
     .side-buttons {
@@ -102,7 +102,7 @@
         justify-content: center;
         border-radius: 10px;
         background-color: #ffc107;
-        min-height: 29%;
+
     }
 
     .side-btn:hover {
@@ -135,6 +135,7 @@
         justify-content: center;
         z-index: 2;
         background: unset;
+        padding-left: 0;
     }
 
     .banner-text-side-half {
@@ -146,6 +147,8 @@
         align-items: center;
         text-align: center;
         z-index: 2;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .banner-image-side {
@@ -157,10 +160,10 @@
 
     .banner-image-side img {
         width: auto;
-        height: 205px;
+        height: 180px;
         object-fit: cover;
-        margin-top: auto;
-        margin-bottom: auto;
+        border-radius: 15px;
+        margin:auto;
         border-radius: 20px;
     }
 
@@ -286,6 +289,9 @@
     .service-description:not(.d-none) .bi {
         transform: scale(1.1);
     }
+      .carousel-control-next, .carousel-control-prev {
+            top: unset !important;
+    }
 </style>
 
 {% endblock %}
@@ -376,7 +382,7 @@
 
         <!-- Service Descriptions -->
         <div id="desc-free-shipping" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -395,7 +401,7 @@
         </div>
 
         <div id="desc-secure-payment" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -414,7 +420,7 @@
         </div>
 
         <div id="desc-support" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -433,7 +439,7 @@
         </div>
 
         <div id="desc-quality" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -452,7 +458,7 @@
         </div>
 
         <div id="desc-returns" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -471,7 +477,7 @@
         </div>
 
         <div id="desc-gift-cards" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
