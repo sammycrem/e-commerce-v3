@@ -11,8 +11,8 @@
     transition: transform .4s ease-in-out !important;
     }
     .carousel-indicators{
-        z-index: 2000000 !important;
-            bottom: -8px !important;
+        z-index: 2 !important;
+
 
     }
 
@@ -72,7 +72,6 @@
         margin-left: auto;
         margin-right: auto;
         border-radius: 15px;
-        padding: 20px 0;
     }
 
     .side-buttons {
@@ -102,7 +101,7 @@
         justify-content: center;
         border-radius: 10px;
         background-color: #ffc107;
-        min-height: 29%;
+
     }
 
     .side-btn:hover {
@@ -129,7 +128,6 @@
 
     .banner-text-side {
         flex: 0 0 50%;
-        padding: 3rem;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -139,7 +137,7 @@
 
     .banner-text-side-half {
         flex: 0 0 50%;
-        padding: 2rem;
+        padding: 0;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -157,11 +155,10 @@
 
     .banner-image-side img {
         width: auto;
-        height: 205px;
+        height: 180px;
         object-fit: cover;
-        margin-top: auto;
-        margin-bottom: auto;
         border-radius: 20px;
+        margin: auto;
     }
 
     .banner-image-side-quarter {
@@ -183,7 +180,7 @@
     .btn-shop-now {
         /*background-color: #212529;*/
         color: #fff;
-        padding: 0.8rem 2.5rem;
+        padding: 0.6rem 2.5rem;
         border-radius: 10px;
         font-weight: bold;
         text-transform: uppercase;
@@ -286,6 +283,25 @@
     .service-description:not(.d-none) .bi {
         transform: scale(1.1);
     }
+    .carousel-control-next, .carousel-control-prev {
+    top: unset !important;
+}
+.next-btn {
+    background: #7a7676ba;
+    border-radius: 60px;
+    max-width: 30px;
+    margin: 2px;
+}
+.carousel-control-next-icon, .carousel-control-prev-icon{
+        background-size: 75% 75% !important;
+
+}
+.carousel-control-prev {
+    left: 5%;
+}
+.carousel-control-next {
+    right: 5%;
+}
 </style>
 
 {% endblock %}
@@ -363,11 +379,11 @@
                     {% endfor %}
                 </div>
                 <!-- Carousel Controls -->
-                <button class="carousel-control-prev" type="button" data-bs-target="#categoryCarousel" data-bs-slide="prev">
+                <button class="carousel-control-prev next-btn" type="button" data-bs-target="#categoryCarousel" data-bs-slide="prev">
                     <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Previous</span>
                 </button>
-                <button class="carousel-control-next" type="button" data-bs-target="#categoryCarousel" data-bs-slide="next">
+                <button class="carousel-control-next next-btn" type="button" data-bs-target="#categoryCarousel" data-bs-slide="next">
                     <span class="carousel-control-next-icon" aria-hidden="true"></span>
                     <span class="visually-hidden">Next</span>
                 </button>
@@ -376,7 +392,7 @@
 
         <!-- Service Descriptions -->
         <div id="desc-free-shipping" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -395,7 +411,7 @@
         </div>
 
         <div id="desc-secure-payment" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -414,7 +430,7 @@
         </div>
 
         <div id="desc-support" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -433,7 +449,7 @@
         </div>
 
         <div id="desc-quality" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -452,7 +468,7 @@
         </div>
 
         <div id="desc-returns" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -471,7 +487,7 @@
         </div>
 
         <div id="desc-gift-cards" class="col-lg-6 col-12 order-1 order-lg-2 d-none service-description">
-            <div class="carousel-css shadow-sm h-100">
+            <div class="carousel-css  h-100">
                 <div class="carousel-container">
                     <div class="carousel-item-custom">
                         <div class="banner-image-side-quarter justify-content-center align-items-center">
@@ -607,8 +623,8 @@
                     targetDesc.classList.remove('d-none');
                     targetDesc.classList.add('animate__animated', 'animate__fadeIn');
 
-                    // Set timeout to revert to carousel after 20 seconds
-                    descriptionTimeout = setTimeout(showCarousel, 20000);
+                    // Set timeout to revert to carousel after 8 seconds
+                    descriptionTimeout = setTimeout(showCarousel, 8000);
                 }
             });
         });
