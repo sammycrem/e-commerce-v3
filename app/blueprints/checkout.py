@@ -21,8 +21,20 @@ def create_payment_intent():
         data = request.get_json() or {}
         items = data.get('items', [])
         shipping_country_iso = data.get('shipping_country_iso')
-        shipping_method = data.get('shipping_method')
-        promo_code = data.get('promo_code')
+        shipping_method = data.get('shipping_method') or session.get('shipping_method', 'standard')
+        promo_code = data.get('promo_code') or session.get('promo_code')
+
+        if not shipping_country_iso:
+            shipping_address_id = session.get('shipping_address_id')
+            if shipping_address_id:
+                address = Address.query.get(shipping_address_id)
+                if address and address.user_id == current_user.id:
+                    shipping_country_iso = address.country_iso_code
+
+            if not shipping_country_iso:
+                address = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+                if address:
+                    shipping_country_iso = address.country_iso_code
 
         # Calculate amount securely on server
         calc_res = calculate_totals_internal(items, shipping_country_iso=shipping_country_iso, shipping_method=shipping_method, promo_code=promo_code, user_id=current_user.id)
@@ -222,11 +234,26 @@ from flask_login import current_user
 @login_required
 def shipping_address():
     if request.method == 'POST':
+        # Check if the request is for selecting an address
+        if 'select_address' in request.form:
+            address_id = request.form.get('address_id')
+            address = Address.query.get_or_404(address_id)
+            if address.user_id == current_user.id and address.address_type == 'shipping':
+                session['shipping_address_id'] = address.id
+                session.modified = True
+                flash('Shipping address selected.', 'success')
+                return redirect(url_for('checkout_bp.shipping_methods'))
+            else:
+                flash('Invalid address selection.', 'danger')
+                return redirect(url_for('checkout_bp.shipping_address'))
+
         # Check if the request is for deleting an address
         if 'delete_address' in request.form:
             address_id = request.form.get('address_id')
             address_to_delete = Address.query.get_or_404(address_id)
             if address_to_delete.user_id == current_user.id:
+                if session.get('shipping_address_id') == address_to_delete.id:
+                    session.pop('shipping_address_id', None)
                 db.session.delete(address_to_delete)
                 db.session.commit()
                 flash('Address deleted successfully!', 'success')
@@ -298,7 +325,14 @@ def shipping_methods():
     items = [{"sku": sku, "quantity": qty} for sku, qty in cart_info.items()]
 
     # Get the user's shipping address
-    shipping_address = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    shipping_address_id = session.get('shipping_address_id')
+    if shipping_address_id:
+        shipping_address = Address.query.get(shipping_address_id)
+        if not shipping_address or shipping_address.user_id != current_user.id:
+            shipping_address = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    else:
+        shipping_address = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+
     if not shipping_address:
         flash('Please add a shipping address before proceeding.', 'warning')
         return redirect(url_for('checkout_bp.shipping_address'))
@@ -338,7 +372,14 @@ def payment_methods():
     items = [{"sku": sku, "quantity": qty} for sku, qty in cart_info.items()]
 
     # Get the user's shipping address for calculation
-    shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    shipping_address_id = session.get('shipping_address_id')
+    if shipping_address_id:
+        shipping_address_obj = Address.query.get(shipping_address_id)
+        if not shipping_address_obj or shipping_address_obj.user_id != current_user.id:
+            shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    else:
+        shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+
     if not shipping_address_obj:
         flash('Please add a shipping address before proceeding.', 'warning')
         return redirect(url_for('checkout_bp.shipping_address'))
@@ -370,7 +411,14 @@ def summary():
 
     items_list = [{"sku": sku, "quantity": qty} for sku, qty in cart_info.items()]
 
-    shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    shipping_address_id = session.get('shipping_address_id')
+    if shipping_address_id:
+        shipping_address_obj = Address.query.get(shipping_address_id)
+        if not shipping_address_obj or shipping_address_obj.user_id != current_user.id:
+            shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    else:
+        shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+
     if not shipping_address_obj:
         flash('Please add a shipping address before proceeding.', 'warning')
         return redirect(url_for('checkout_bp.shipping_address'))
