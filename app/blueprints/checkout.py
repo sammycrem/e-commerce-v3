@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, session, render_template, flash, 
 from flask_login import login_required, current_user
 from ..extensions import db, csrf
 from ..models import Promotion, Order, OrderItem, Variant
-from ..utils import calculate_totals_internal, process_loyalty_reward
+from ..utils import calculate_totals_internal, process_loyalty_reward, send_emailTls2
 from ..mollie_client import get_mollie_client
 from ..stripe_client import get_stripe_client
 from datetime import datetime, timezone
@@ -498,7 +498,6 @@ def summary():
 
             # Send order confirmation email
             try:
-                from ..utils import send_emailTls2
                 sender_email = current_app.config.get('APP_EMAIL_SENDER')
                 smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
                 smtp_server = current_app.config.get('APP_SMTP_SERVER')
