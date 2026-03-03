@@ -14,6 +14,17 @@ logger = logging.getLogger(__name__)
 
 checkout_bp = Blueprint('checkout_bp', __name__)
 
+from ..models import Address
+
+def get_effective_shipping_address(user_id):
+    """Retrieves the session-selected shipping address or falls back to the first available one."""
+    shipping_address_id = session.get('shipping_address_id')
+    if shipping_address_id:
+        addr = Address.query.get(shipping_address_id)
+        if addr and addr.user_id == user_id:
+            return addr
+    return Address.query.filter_by(user_id=user_id, address_type='shipping').first()
+
 @checkout_bp.route('/api/create-payment-intent', methods=['POST'])
 @login_required
 def create_payment_intent():
@@ -25,16 +36,9 @@ def create_payment_intent():
         promo_code = data.get('promo_code') or session.get('promo_code')
 
         if not shipping_country_iso:
-            shipping_address_id = session.get('shipping_address_id')
-            if shipping_address_id:
-                address = Address.query.get(shipping_address_id)
-                if address and address.user_id == current_user.id:
-                    shipping_country_iso = address.country_iso_code
-
-            if not shipping_country_iso:
-                address = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
-                if address:
-                    shipping_country_iso = address.country_iso_code
+            address = get_effective_shipping_address(current_user.id)
+            if address:
+                shipping_country_iso = address.country_iso_code
 
         # Calculate amount securely on server
         calc_res = calculate_totals_internal(items, shipping_country_iso=shipping_country_iso, shipping_method=shipping_method, promo_code=promo_code, user_id=current_user.id)
@@ -325,13 +329,7 @@ def shipping_methods():
     items = [{"sku": sku, "quantity": qty} for sku, qty in cart_info.items()]
 
     # Get the user's shipping address
-    shipping_address_id = session.get('shipping_address_id')
-    if shipping_address_id:
-        shipping_address = Address.query.get(shipping_address_id)
-        if not shipping_address or shipping_address.user_id != current_user.id:
-            shipping_address = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
-    else:
-        shipping_address = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    shipping_address = get_effective_shipping_address(current_user.id)
 
     if not shipping_address:
         flash('Please add a shipping address before proceeding.', 'warning')
@@ -372,13 +370,7 @@ def payment_methods():
     items = [{"sku": sku, "quantity": qty} for sku, qty in cart_info.items()]
 
     # Get the user's shipping address for calculation
-    shipping_address_id = session.get('shipping_address_id')
-    if shipping_address_id:
-        shipping_address_obj = Address.query.get(shipping_address_id)
-        if not shipping_address_obj or shipping_address_obj.user_id != current_user.id:
-            shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
-    else:
-        shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    shipping_address_obj = get_effective_shipping_address(current_user.id)
 
     if not shipping_address_obj:
         flash('Please add a shipping address before proceeding.', 'warning')
@@ -411,13 +403,7 @@ def summary():
 
     items_list = [{"sku": sku, "quantity": qty} for sku, qty in cart_info.items()]
 
-    shipping_address_id = session.get('shipping_address_id')
-    if shipping_address_id:
-        shipping_address_obj = Address.query.get(shipping_address_id)
-        if not shipping_address_obj or shipping_address_obj.user_id != current_user.id:
-            shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
-    else:
-        shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    shipping_address_obj = get_effective_shipping_address(current_user.id)
 
     if not shipping_address_obj:
         flash('Please add a shipping address before proceeding.', 'warning')
@@ -509,6 +495,42 @@ def summary():
                     v.stock_quantity -= it['quantity']
 
             db.session.commit()
+
+            # Send order confirmation email
+            try:
+                from ..utils import send_emailTls2
+                sender_email = current_app.config.get('APP_EMAIL_SENDER')
+                smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
+                smtp_server = current_app.config.get('APP_SMTP_SERVER')
+                smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
+
+                if sender_email and smtp_password:
+                    subject = f"Order Confirmation - {new_order.public_order_id}"
+
+                    # Build items list for email
+                    items_html = "<ul>"
+                    for it in items_list:
+                        items_html += f"<li>{it['sku']} x {it['quantity']}</li>"
+                    items_html += "</ul>"
+
+                    symbol = current_app.config.get('currency_symbol', '€')
+                    total_formatted = f"{symbol}{new_order.total_cents / 100:.2f}"
+
+                    body = f"""
+                    <html>
+                    <body>
+                        <h1>Thank you for your order!</h1>
+                        <p>Order ID: <strong>{new_order.public_order_id}</strong></p>
+                        <p>Items ordered:</p>
+                        {items_html}
+                        <p>Total: <strong>{total_formatted}</strong></p>
+                        <p>We will notify you once your order has been shipped.</p>
+                    </body>
+                    </html>
+                    """
+                    send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, current_user.email, subject, body)
+            except Exception as email_err:
+                logger.error(f"Failed to send order confirmation email: {email_err}")
 
             if selected_payment == 'mollie':
                 try:
