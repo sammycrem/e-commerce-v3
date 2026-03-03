@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, session, render_template, flash, 
 from flask_login import login_required, current_user
 from ..extensions import db, csrf
 from ..models import Promotion, Order, OrderItem, Variant
-from ..utils import calculate_totals_internal, process_loyalty_reward, send_emailTls2
+from ..utils import calculate_totals_internal, process_loyalty_reward, send_emailTls2, send_order_status_update_email
 from ..mollie_client import get_mollie_client
 from ..stripe_client import get_stripe_client
 from datetime import datetime, timezone
@@ -213,6 +213,7 @@ def handle_payment_webhook():
             order.status = 'PAID'
             db.session.commit()
             process_loyalty_reward(order)
+            send_order_status_update_email(order)
             logger.info("Webhook: Order %s set to PAID", order.public_order_id)
             return jsonify({"status": "success"}), 200
         elif order:
@@ -633,6 +634,7 @@ def mollie_return(order_id):
                     order.status = 'PAID'
                     db.session.commit()
                     process_loyalty_reward(order)
+                    send_order_status_update_email(order)
                 # Clear session now that payment is confirmed
                 session.pop('cart', None)
                 session.pop('shipping_method', None)
@@ -693,6 +695,7 @@ def handle_mollie_webhook():
                 order.status = 'PAID'
                 db.session.commit()
                 process_loyalty_reward(order)
+                send_order_status_update_email(order)
                 logger.info(f"Order {order_id} paid via Mollie")
         elif payment.is_canceled() or payment.is_expired():
              if order.status == 'PENDING':
@@ -738,6 +741,7 @@ def handle_stripe_webhook():
                 order.status = 'PAID'
                 db.session.commit()
                 process_loyalty_reward(order)
+                send_order_status_update_email(order)
                 logger.info(f"Order {order_id} paid via Stripe")
         else:
              logger.warning(f"Stripe webhook: No order_id in metadata for payment {payment_intent.id}")

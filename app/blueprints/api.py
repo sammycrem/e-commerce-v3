@@ -8,7 +8,7 @@ from ..models import Product, Variant, ProductImage, VariantImage, Order, OrderI
 from ..extensions import db, cache, limiter
 from sqlalchemy.orm import joinedload
 from sqlalchemy import desc, func, case
-from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height, serialize_group, serialize_category, slugify
+from ..utils import serialize_product, serialize_promotion, generate_image_icon, convert_to_webp, ensure_icon_for_url, serialize_review, process_loyalty_reward, resize_image_max_height, serialize_group, serialize_category, slugify, send_order_status_update_email
 from ..product_service import products_to_csv, parse_products_file, _create_product_internal, _update_product_internal
 from ..seeder import setup_database
 import os
@@ -583,10 +583,11 @@ def admin_update_order_status(public_order_id):
     db.session.add(order)
     db.session.commit()
 
-    # Trigger loyalty reward if status is PAID, SHIPPED, or DELIVERED
+    # Trigger loyalty reward and email notification if status is PAID, SHIPPED, or DELIVERED
     if new_status in ['PAID', 'SHIPPED', 'DELIVERED']:
         try:
             process_loyalty_reward(order)
+            send_order_status_update_email(order)
         except Exception:
             traceback.print_exc()
 
@@ -609,6 +610,7 @@ def admin_update_order_shipment(public_order_id):
     if mark_as_shipped:
         order.status = 'SHIPPED'
         order.shipped_at = order.shipped_at or datetime.now(timezone.utc)
+        send_order_status_update_email(order)
 
     db.session.add(order)
     db.session.commit()

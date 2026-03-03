@@ -1375,3 +1375,35 @@ def big_url(url):
     base, _ = os.path.splitext(url)
     if base.endswith("_icon") or base.endswith("_big"): return url
     return base + "_big.webp"
+
+def send_order_status_update_email(order):
+    """Sends an email to the customer notifying them of an order status update."""
+    from flask import current_app
+    try:
+        sender_email = current_app.config.get('APP_EMAIL_SENDER')
+        smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
+        smtp_server = current_app.config.get('APP_SMTP_SERVER')
+        smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
+
+        if not sender_email or not smtp_password or not order.user:
+            return
+
+        subject = f"Order Update - {order.public_order_id}"
+        status_text = order.status.replace('_', ' ').title()
+
+        body = f"""
+        <html>
+        <body>
+            <h1>Order Status Update</h1>
+            <p>Hello {order.user.username},</p>
+            <p>Your order <strong>{order.public_order_id}</strong> is now: <strong>{status_text}</strong>.</p>
+            <p>You can view your order details in your account.</p>
+            <p>Thank you for shopping with us!</p>
+        </body>
+        </html>
+        """
+
+        send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, order.user.email, subject, body)
+        logger.debug(f"Status update email ({order.status}) sent to: {order.user.email}")
+    except Exception as e:
+        logger.error(f"Failed to send order status update email: {e}")
