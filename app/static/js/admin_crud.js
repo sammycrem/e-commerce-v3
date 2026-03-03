@@ -383,7 +383,8 @@
 
     async function loadProducts() {
       const statusFilter = $('#product-filter-status') ? $('#product-filter-status').value : 'all';
-      const res = await fetch(`/api/admin/products?status=${encodeURIComponent(statusFilter)}`);
+      const searchQuery = $('#product-search-name') ? $('#product-search-name').value : '';
+      const res = await fetch(`/api/admin/products?status=${encodeURIComponent(statusFilter)}&q=${encodeURIComponent(searchQuery)}`);
       const data = await res.json();
       productList.innerHTML = '';
       const list = Array.isArray(data) ? data : (data.products || []);
@@ -432,6 +433,9 @@
     }
     if ($('#product-filter-category')) {
         $('#product-filter-category').addEventListener('change', loadProducts);
+    }
+    if ($('#product-search-name')) {
+        $('#product-search-name').addEventListener('input', loadProducts);
     }
 
     async function loadProduct(sku) {

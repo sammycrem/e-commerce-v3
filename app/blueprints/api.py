@@ -263,6 +263,8 @@ def admin_create_product():
 def admin_list_products():
     check_admin()
     status_filter = request.args.get('status')
+    q = request.args.get('q')
+
     query = Product.query.options(
         joinedload(Product.images),
         joinedload(Product.variants).joinedload(Variant.images)
@@ -270,6 +272,9 @@ def admin_list_products():
 
     if status_filter and status_filter != 'all':
         query = query.filter_by(status=status_filter)
+
+    if q:
+        query = query.filter(Product.name.ilike(f"%{q}%"))
 
     products = query.all()
     return jsonify([serialize_product(p, include_reviews=False) for p in products]), 200
