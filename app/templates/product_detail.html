@@ -252,9 +252,9 @@
                 <div class="mb-4">
                     <label for="qty-input" class="form-label fw-bold small text-uppercase text-muted mb-2">Quantity</label>
                     <div class="input-group" style="width: 150px;">
-                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepDown()">-</button>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepDown()" aria-label="Decrease quantity">-</button>
                         <input id="qty-input" type="number" min="1" value="1" class="form-control text-center">
-                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepUp()">+</button>
+                        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="document.getElementById('qty-input').stepUp()" aria-label="Increase quantity">+</button>
                     </div>
                 </div>
 
