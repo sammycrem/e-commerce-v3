@@ -11,6 +11,10 @@ import logging
 from flask import current_app
 
 logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler('app.log')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 checkout_bp = Blueprint('checkout_bp', __name__)
 
@@ -528,6 +532,7 @@ def summary():
                     </html>
                     """
                     send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, current_user.email, subject, body)
+                    logger.debug(f"Email sent to: {current_user.email}")
             except Exception as email_err:
                 logger.error(f"Failed to send order confirmation email: {email_err}")
 
