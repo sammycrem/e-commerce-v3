@@ -12,7 +12,7 @@ import os
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify, request, render_template , render_template_string
+from flask import Flask, jsonify, request, render_template , render_template_string, current_app
 import re
 import json
 import html
@@ -1378,7 +1378,8 @@ def big_url(url):
 
 def send_order_status_update_email(order):
     """Sends an email to the customer notifying them of an order status update."""
-    from flask import current_app
+    from flask import current_app, render_template
+    from .models import GlobalSetting
     try:
         sender_email = current_app.config.get('APP_EMAIL_SENDER')
         smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
@@ -1388,20 +1389,31 @@ def send_order_status_update_email(order):
         if not sender_email or not smtp_password or not order.user:
             return
 
+        # Fetch Loyalty Settings
+        loyalty_enabled = GlobalSetting.query.filter_by(key='loyalty_enabled').first()
+        loyalty_percentage = 0
+        if loyalty_enabled and (loyalty_enabled.value or '').lower() == 'true':
+            pct_setting = GlobalSetting.query.filter_by(key='loyalty_percentage').first()
+            if pct_setting:
+                try:
+                    loyalty_percentage = float(pct_setting.value)
+                except (ValueError, TypeError):
+                    loyalty_percentage = 0
+
         subject = f"Order Update - {order.public_order_id}"
         status_text = order.status.replace('_', ' ').title()
 
-        body = f"""
-        <html>
-        <body>
-            <h1>Order Status Update</h1>
-            <p>Hello {order.user.username},</p>
-            <p>Your order <strong>{order.public_order_id}</strong> is now: <strong>{status_text}</strong>.</p>
-            <p>You can view your order details in your account.</p>
-            <p>Thank you for shopping with us!</p>
-        </body>
-        </html>
-        """
+        # Professional mapping for specific statuses if needed
+        if order.status == 'PAID':
+            status_text = "Payment Received"
+
+        body = render_template('emails/order_status_update.html',
+                               order=order,
+                               status_text=status_text,
+                               loyalty_percentage=loyalty_percentage,
+                               date=datetime.now().strftime("%B %d, %Y"),
+                               host=request.host,
+                               year=datetime.now().year)
 
         send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, order.user.email, subject, body)
         logger.debug(f"Status update email ({order.status}) sent to: {order.user.email}")
