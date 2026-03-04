@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 from flask_mail import Mail, Message
 import smtplib, ssl
 from email.mime.text import MIMEText
+from email.header import Header
 
 import os
 from dotenv import load_dotenv
@@ -72,10 +73,10 @@ def send_email(sender_email,smtp_password, smtp_server, smtp_port, recipient_ema
       server.login(sender_email, smtp_password)  # Replace with your email password
 
       # Create the email message
-      message = MIMEText(body, _subtype='html')
+      message = MIMEText(body, 'html', 'utf-8')
       message['From'] = sender_email
       message['To'] = recipient_email
-      message['Subject'] = subject
+      message['Subject'] = Header(subject, 'utf-8').encode()
 
       #logger.info('Sendmail' + str(server.))
 
@@ -95,12 +96,12 @@ def send_emailTls2(sender_email,smtp_password, smtp_server, smtp_port, recipient
     message_text="send correctly to: " + recipient_email
     # Create message
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
+    msg["Subject"] = Header(subject, 'utf-8').encode()
     msg["From"] = sender_email
     msg["To"] = recipient_email
 
     # Attach HTML content
-    html_part = MIMEText(body, "html")
+    html_part = MIMEText(body, "html", "utf-8")
     msg.attach(html_part)
 
     try:
