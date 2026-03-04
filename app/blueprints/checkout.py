@@ -10,11 +10,7 @@ from math import ceil
 import logging
 from flask import current_app
 
-logger = logging.getLogger(__name__)
-file_handler = logging.FileHandler('app.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+logger = logging.getLogger('app.' + __name__)
 
 checkout_bp = Blueprint('checkout_bp', __name__)
 

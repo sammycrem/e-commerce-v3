@@ -45,12 +45,19 @@ from .blueprints.main import main_bp
 from .blueprints.api import api_bp
 
 # Logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('app')
 logger.setLevel(logging.DEBUG)
-file_handler = logging.FileHandler('app.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+# Ensure we don't add multiple handlers if create_app is called multiple times
+if not logger.handlers:
+    file_handler = logging.FileHandler('app.log')
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    # Also add a stream handler for console output
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
 
 # Global Config Loading (for backward compatibility and extensions)
 encryption_key = os.environ.get('ENCRYPTION_KEY')

@@ -1312,6 +1312,35 @@ def admin_gallery_list():
 
     return jsonify(files), 200
 
+@api_bp.route('/admin/logs', methods=['GET'])
+@login_required
+def admin_get_logs():
+    check_admin()
+    log_file = 'app.log'
+    if not os.path.exists(log_file):
+        return jsonify({"logs": ""}), 200
+
+    try:
+        from collections import deque
+        with open(log_file, 'r') as f:
+            # Get last 100 lines efficiently
+            last_lines = deque(f, 100)
+            return jsonify({"logs": "".join(last_lines)}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api_bp.route('/admin/logs/clear', methods=['POST'])
+@login_required
+def admin_clear_logs():
+    check_admin()
+    log_file = 'app.log'
+    try:
+        with open(log_file, 'w') as f:
+            f.write(f"--- Log cleared at {datetime.now(timezone.utc).isoformat()} ---\n")
+        return jsonify({"message": "Logs cleared"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @api_bp.route('/admin/gallery/<filename>', methods=['DELETE'])
 @login_required
 def admin_gallery_delete(filename):

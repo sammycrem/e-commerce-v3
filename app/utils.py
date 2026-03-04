@@ -24,13 +24,7 @@ import shutil
 from decimal import Decimal, ROUND_HALF_UP
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-file_handler = logging.FileHandler('util.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+logger = logging.getLogger('app.' + __name__)
 
 def str_to_bool(string):
   """Converts a string to a boolean value.

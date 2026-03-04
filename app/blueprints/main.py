@@ -11,7 +11,7 @@ import os
 import uuid
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('app.' + __name__)
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
 
