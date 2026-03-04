@@ -6,6 +6,7 @@ from flask_mail import Mail, Message
 import smtplib, ssl
 from email.mime.text import MIMEText
 from email.header import Header
+from email.mime.multipart import MIMEMultipart
 
 import os
 from dotenv import load_dotenv
@@ -16,12 +17,8 @@ import re
 import json
 import html
 import requests
-import re
 import urllib.parse
 from urllib.parse import urlparse, parse_qs
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from PIL import Image
 import shutil
 from decimal import Decimal, ROUND_HALF_UP
@@ -65,6 +62,7 @@ def generate_id(length):
 def send_email(sender_email,smtp_password, smtp_server, smtp_port, recipient_email, subject, body):
     """Sends an email using STARTTLS."""
     message_text="send correctly to: " + recipient_email
+    server = None
     try:
       # Connect to the SMTP server using STARTTLS
       server = smtplib.SMTP(smtp_server, smtp_port)  # Replace with your SMTP server and port
@@ -78,16 +76,15 @@ def send_email(sender_email,smtp_password, smtp_server, smtp_port, recipient_ema
       message['To'] = recipient_email
       message['Subject'] = Header(subject, 'utf-8').encode()
 
-      #logger.info('Sendmail' + str(server.))
-
       # Send the email
-      server.sendmail(sender_email, recipient_email, message.as_string())
+      server.send_message(message)
       
     except Exception as e:
-       logger.info('Sendmail' + str(e))
-       message_text=e
+       logger.info('Sendmail error: ' + str(e))
+       message_text = e
     finally:
-        server.quit()
+        if server:
+            server.quit()
         return message_text
 # ---------end------------
 
@@ -104,19 +101,21 @@ def send_emailTls2(sender_email,smtp_password, smtp_server, smtp_port, recipient
     html_part = MIMEText(body, "html", "utf-8")
     msg.attach(html_part)
 
+    server = None
     try:
       server = smtplib.SMTP(smtp_server, smtp_port)
       server.starttls()
       server.login(sender_email, smtp_password)
-      server.sendmail(sender_email, recipient_email, msg.as_string())
+      server.send_message(msg)
       
       logger.info("Email sent successfully! to " + recipient_email)
     except Exception as e:
         logger.info(f"Failed to send email: {str(e)}" + " to: " + recipient_email)
-        message_text=e
+        message_text = e
 
     finally:
-        server.quit()
+        if server:
+            server.quit()
         return message_text
 
 # ---------end------------

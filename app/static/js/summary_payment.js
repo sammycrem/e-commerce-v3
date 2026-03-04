@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const stripe = Stripe(window.stripePublicKey);
     let elements;
+    let paymentIntentId;
 
     // Fetch PaymentIntent from backend
     // Since we are on Summary page, we assume cart and shipping are finalized.
@@ -105,7 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data_pi = await res.json();
             const clientSecret = data_pi.clientSecret;
-            const paymentIntentId = clientSecret.split('_secret_')[0];
+            paymentIntentId = clientSecret.split('_secret_')[0];
 
             const appearance = { theme: 'stripe' };
             elements = stripe.elements({ appearance, clientSecret });
