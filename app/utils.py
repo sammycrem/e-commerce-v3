@@ -1503,7 +1503,7 @@ def generate_invoice_pdf(order):
     pdf.cell(155, 10, "Total:", align='R')
     pdf.cell(35, 10, f"{(order.total_cents / 100):.2f} EUR", align='R')
 
-    return pdf.output()
+    return bytes(pdf.output())
 
 def send_order_status_update_email(order):
     """Sends an email to the customer notifying them of an order status update."""
