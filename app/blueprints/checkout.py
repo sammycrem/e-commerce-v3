@@ -510,28 +510,12 @@ def summary():
 
                 if sender_email and smtp_password:
                     subject = f"Order Confirmation - {new_order.public_order_id}"
-
-                    # Build items list for email
-                    items_html = "<ul>"
-                    for it in items_list:
-                        items_html += f"<li>{it['sku']} x {it['quantity']}</li>"
-                    items_html += "</ul>"
-
                     symbol = current_app.config.get('currency_symbol', '€')
-                    total_formatted = f"{symbol}{new_order.total_cents / 100:.2f}"
 
-                    body = f"""
-                    <html>
-                    <body>
-                        <h1>Thank you for your order!</h1>
-                        <p>Order ID: <strong>{new_order.public_order_id}</strong></p>
-                        <p>Items ordered:</p>
-                        {items_html}
-                        <p>Total: <strong>{total_formatted}</strong></p>
-                        <p>We will notify you once your order has been shipped.</p>
-                    </body>
-                    </html>
-                    """
+                    body = render_template('emails/order_confirmation.html',
+                                           order=new_order,
+                                           currency_symbol=symbol)
+
                     send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, current_user.email, subject, body)
                     logger.debug(f"Email sent to: {current_user.email}")
             except Exception as email_err:
