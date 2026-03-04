@@ -9,6 +9,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from ..utils import generate_id, create_directory, send_emailTls2, convert_to_webp, generate_image_icon, ensure_icon_for_url
 import os
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
 
@@ -281,8 +284,33 @@ def signup():
                 new_user = User(username=username, user_id=user_id , password=generate_password_hash(password), encrypted_password=encrypted_pw, email=email)
                 db.session.add(new_user)
                 db.session.commit()
-                # Email sending logic... simplified for blueprint move
-                # We need to access SERVER_URL, etc. from config
+
+                # Send welcome and validation email
+                try:
+                    server_url = current_app.config.get('APP_SERVER_URL', 'http://localhost:5000')
+                    validation_link = f"{server_url}/validate?id={new_user.user_id}&username={new_user.username}"
+
+                    sender_email = current_app.config.get('APP_EMAIL_SENDER')
+                    smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
+                    smtp_server = current_app.config.get('APP_SMTP_SERVER')
+                    smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
+
+                    if sender_email and smtp_password:
+                        subject = "Welcome to E-Commerce Pro!"
+                        body = f"""
+                        <html>
+                        <body>
+                            <h1>Welcome, {new_user.username}!</h1>
+                            <p>Thank you for signing up with E-Commerce Pro.</p>
+                            <p>Please click the link below to validate your account:</p>
+                            <a href="{validation_link}">{validation_link}</a>
+                            <p>If you did not sign up for this account, please ignore this email.</p>
+                        </body>
+                        </html>
+                        """
+                        send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, new_user.email, subject, body)
+                except Exception as email_err:
+                    logger.error(f"Failed to send signup email: {email_err}")
 
                 create_directory(os.path.join(current_app.config['APP_WWW'], new_user.user_id) if 'APP_WWW' in current_app.config else 'www') # logic from app.py
 
@@ -292,7 +320,7 @@ def signup():
                 flash('User created successfully. Please login.')
                 return redirect(url_for('main.login'))
             except Exception as e:
-                print(f"An error occurred: signup  {str(e)}")
+                logger.error(f"An error occurred during signup: {str(e)}")
                 return render_template('signup.html', message_text=str(e))
 
     return render_template('signup.html')

@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const stripe = Stripe(window.stripePublicKey);
     let elements;
+    let paymentIntentId;
 
     // Fetch PaymentIntent from backend
     // Since we are on Summary page, we assume cart and shipping are finalized.
@@ -103,7 +104,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 throw new Error(err.error || 'Failed to initialize payment');
             }
 
-            const { clientSecret } = await res.json();
+            const data_pi = await res.json();
+            const clientSecret = data_pi.clientSecret;
+            paymentIntentId = clientSecret.split('_secret_')[0];
 
             const appearance = { theme: 'stripe' };
             elements = stripe.elements({ appearance, clientSecret });
@@ -163,6 +166,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Convert to JSON
             const data = {};
             formData.forEach((value, key) => data[key] = value);
+
+            // Include Payment Intent ID
+            data['payment_intent_id'] = paymentIntentId;
 
             // Add AJAX header
             const orderRes = await fetch(window.location.href, { // POST to current URL (summary)

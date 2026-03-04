@@ -41,20 +41,37 @@
 
             <div class="row g-3 mb-5">
                 {% for address in addresses if address.address_type == 'shipping' %}
+                {% set is_selected = (session.get('shipping_address_id')|int == address.id) %}
                 <div class="col-md-6">
-                    <div class="card h-100 shadow-sm border-0">
+                    <div class="card h-100 shadow-sm border-0 {% if is_selected %}border border-primary{% endif %}" {% if is_selected %}style="border-width: 2px !important;"{% endif %}>
                         <div class="card-body">
-                            <h5 class="card-title fw-bold">{{ address.first_name }} {{ address.last_name }}</h5>
+                            <h5 class="card-title fw-bold d-flex justify-content-between">
+                                {{ address.first_name }} {{ address.last_name }}
+                                {% if is_selected %}
+                                <span class="badge bg-primary rounded-pill small" style="font-size: 0.6rem;">SELECTED</span>
+                                {% endif %}
+                            </h5>
                             <p class="card-text text-muted small mb-1">{{ address.address_line_1 }}</p>
                             {% if address.address_line_2 %}<p class="card-text text-muted small mb-1">{{ address.address_line_2 }}</p>{% endif %}
                             <p class="card-text text-muted small mb-1">{{ address.city }}, {{ address.state }} {{ address.postal_code }}</p>
                             <p class="card-text text-muted small mb-1">{{ address.country_iso_code }}</p>
                             <p class="card-text text-muted small mb-3">{{ address.phone_number }}</p>
 
-                            <div class="d-flex gap-2">
+                            <div class="d-flex flex-wrap gap-2">
+                                <form method="POST" action="{{ url_for('checkout_bp.shipping_address') }}" class="w-100 mb-1">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="address_id" value="{{ address.id }}">
+                                    {% if is_selected %}
+                                        <button type="button" class="btn btn-success btn-sm w-100" disabled>
+                                            <i class="fas fa-check-circle me-1"></i> Deliver here
+                                        </button>
+                                    {% else %}
+                                        <button type="submit" name="select_address" class="btn btn-primary btn-sm w-100">Deliver here</button>
+                                    {% endif %}
+                                </form>
                                 <a href="{{ url_for('checkout_bp.edit_address', address_id=address.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                                 <form method="POST" action="{{ url_for('checkout_bp.shipping_address') }}" class="d-inline">
-<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="address_id" value="{{ address.id }}">
                                     <button type="submit" name="delete_address" class="btn btn-sm btn-outline-danger">Delete</button>
                                 </form>

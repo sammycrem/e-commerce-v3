@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, session, render_template, flash, 
 from flask_login import login_required, current_user
 from ..extensions import db, csrf
 from ..models import Promotion, Order, OrderItem, Variant
-from ..utils import calculate_totals_internal, process_loyalty_reward
+from ..utils import calculate_totals_internal, process_loyalty_reward, send_emailTls2, send_order_status_update_email
 from ..mollie_client import get_mollie_client
 from ..stripe_client import get_stripe_client
 from datetime import datetime, timezone
@@ -11,8 +11,23 @@ import logging
 from flask import current_app
 
 logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler('app.log')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 checkout_bp = Blueprint('checkout_bp', __name__)
+
+from ..models import Address
+
+def get_effective_shipping_address(user_id):
+    """Retrieves the session-selected shipping address or falls back to the first available one."""
+    shipping_address_id = session.get('shipping_address_id')
+    if shipping_address_id:
+        addr = Address.query.get(shipping_address_id)
+        if addr and addr.user_id == user_id:
+            return addr
+    return Address.query.filter_by(user_id=user_id, address_type='shipping').first()
 
 @checkout_bp.route('/api/create-payment-intent', methods=['POST'])
 @login_required
@@ -21,8 +36,13 @@ def create_payment_intent():
         data = request.get_json() or {}
         items = data.get('items', [])
         shipping_country_iso = data.get('shipping_country_iso')
-        shipping_method = data.get('shipping_method')
-        promo_code = data.get('promo_code')
+        shipping_method = data.get('shipping_method') or session.get('shipping_method', 'standard')
+        promo_code = data.get('promo_code') or session.get('promo_code')
+
+        if not shipping_country_iso:
+            address = get_effective_shipping_address(current_user.id)
+            if address:
+                shipping_country_iso = address.country_iso_code
 
         # Calculate amount securely on server
         calc_res = calculate_totals_internal(items, shipping_country_iso=shipping_country_iso, shipping_method=shipping_method, promo_code=promo_code, user_id=current_user.id)
@@ -193,6 +213,7 @@ def handle_payment_webhook():
             order.status = 'PAID'
             db.session.commit()
             process_loyalty_reward(order)
+            send_order_status_update_email(order)
             logger.info("Webhook: Order %s set to PAID", order.public_order_id)
             return jsonify({"status": "success"}), 200
         elif order:
@@ -222,11 +243,26 @@ from flask_login import current_user
 @login_required
 def shipping_address():
     if request.method == 'POST':
+        # Check if the request is for selecting an address
+        if 'select_address' in request.form:
+            address_id = request.form.get('address_id')
+            address = Address.query.get_or_404(address_id)
+            if address.user_id == current_user.id and address.address_type == 'shipping':
+                session['shipping_address_id'] = address.id
+                session.modified = True
+                flash('Shipping address selected.', 'success')
+                return redirect(url_for('checkout_bp.shipping_methods'))
+            else:
+                flash('Invalid address selection.', 'danger')
+                return redirect(url_for('checkout_bp.shipping_address'))
+
         # Check if the request is for deleting an address
         if 'delete_address' in request.form:
             address_id = request.form.get('address_id')
             address_to_delete = Address.query.get_or_404(address_id)
             if address_to_delete.user_id == current_user.id:
+                if session.get('shipping_address_id') == address_to_delete.id:
+                    session.pop('shipping_address_id', None)
                 db.session.delete(address_to_delete)
                 db.session.commit()
                 flash('Address deleted successfully!', 'success')
@@ -298,7 +334,8 @@ def shipping_methods():
     items = [{"sku": sku, "quantity": qty} for sku, qty in cart_info.items()]
 
     # Get the user's shipping address
-    shipping_address = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    shipping_address = get_effective_shipping_address(current_user.id)
+
     if not shipping_address:
         flash('Please add a shipping address before proceeding.', 'warning')
         return redirect(url_for('checkout_bp.shipping_address'))
@@ -338,7 +375,8 @@ def payment_methods():
     items = [{"sku": sku, "quantity": qty} for sku, qty in cart_info.items()]
 
     # Get the user's shipping address for calculation
-    shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    shipping_address_obj = get_effective_shipping_address(current_user.id)
+
     if not shipping_address_obj:
         flash('Please add a shipping address before proceeding.', 'warning')
         return redirect(url_for('checkout_bp.shipping_address'))
@@ -370,7 +408,8 @@ def summary():
 
     items_list = [{"sku": sku, "quantity": qty} for sku, qty in cart_info.items()]
 
-    shipping_address_obj = Address.query.filter_by(user_id=current_user.id, address_type='shipping').first()
+    shipping_address_obj = get_effective_shipping_address(current_user.id)
+
     if not shipping_address_obj:
         flash('Please add a shipping address before proceeding.', 'warning')
         return redirect(url_for('checkout_bp.shipping_address'))
@@ -461,6 +500,26 @@ def summary():
                     v.stock_quantity -= it['quantity']
 
             db.session.commit()
+
+            # Send order confirmation email
+            try:
+                sender_email = current_app.config.get('APP_EMAIL_SENDER')
+                smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
+                smtp_server = current_app.config.get('APP_SMTP_SERVER')
+                smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
+
+                if sender_email and smtp_password:
+                    subject = f"Order Confirmation - {new_order.public_order_id}"
+                    symbol = current_app.config.get('currency_symbol', '€')
+
+                    body = render_template('emails/order_confirmation.html',
+                                           order=new_order,
+                                           currency_symbol=symbol)
+
+                    send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, current_user.email, subject, body)
+                    logger.debug(f"Email sent to: {current_user.email}")
+            except Exception as email_err:
+                logger.error(f"Failed to send order confirmation email: {email_err}")
 
             if selected_payment == 'mollie':
                 try:
@@ -559,6 +618,7 @@ def mollie_return(order_id):
                     order.status = 'PAID'
                     db.session.commit()
                     process_loyalty_reward(order)
+                    send_order_status_update_email(order)
                 # Clear session now that payment is confirmed
                 session.pop('cart', None)
                 session.pop('shipping_method', None)
@@ -619,6 +679,7 @@ def handle_mollie_webhook():
                 order.status = 'PAID'
                 db.session.commit()
                 process_loyalty_reward(order)
+                send_order_status_update_email(order)
                 logger.info(f"Order {order_id} paid via Mollie")
         elif payment.is_canceled() or payment.is_expired():
              if order.status == 'PENDING':
@@ -664,6 +725,7 @@ def handle_stripe_webhook():
                 order.status = 'PAID'
                 db.session.commit()
                 process_loyalty_reward(order)
+                send_order_status_update_email(order)
                 logger.info(f"Order {order_id} paid via Stripe")
         else:
              logger.warning(f"Stripe webhook: No order_id in metadata for payment {payment_intent.id}")

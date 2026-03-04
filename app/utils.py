@@ -5,22 +5,20 @@ from datetime import datetime, timezone, timedelta
 from flask_mail import Mail, Message
 import smtplib, ssl
 from email.mime.text import MIMEText
+from email.header import Header
+from email.mime.multipart import MIMEMultipart
 
 import os
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify, request, render_template , render_template_string
+from flask import Flask, jsonify, request, render_template , render_template_string, current_app
 import re
 import json
 import html
 import requests
-import re
 import urllib.parse
 from urllib.parse import urlparse, parse_qs
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from PIL import Image
 import shutil
 from decimal import Decimal, ROUND_HALF_UP
@@ -64,6 +62,7 @@ def generate_id(length):
 def send_email(sender_email,smtp_password, smtp_server, smtp_port, recipient_email, subject, body):
     """Sends an email using STARTTLS."""
     message_text="send correctly to: " + recipient_email
+    server = None
     try:
       # Connect to the SMTP server using STARTTLS
       server = smtplib.SMTP(smtp_server, smtp_port)  # Replace with your SMTP server and port
@@ -72,21 +71,20 @@ def send_email(sender_email,smtp_password, smtp_server, smtp_port, recipient_ema
       server.login(sender_email, smtp_password)  # Replace with your email password
 
       # Create the email message
-      message = MIMEText(body, _subtype='html')
+      message = MIMEText(body, 'html', 'utf-8')
       message['From'] = sender_email
       message['To'] = recipient_email
-      message['Subject'] = subject
-
-      #logger.info('Sendmail' + str(server.))
+      message['Subject'] = Header(subject, 'utf-8').encode()
 
       # Send the email
-      server.sendmail(sender_email, recipient_email, message.as_string())
+      server.send_message(message)
       
     except Exception as e:
-       logger.info('Sendmail' + str(e))
-       message_text=e
+       logger.info('Sendmail error: ' + str(e))
+       message_text = e
     finally:
-        server.quit()
+        if server:
+            server.quit()
         return message_text
 # ---------end------------
 
@@ -95,27 +93,29 @@ def send_emailTls2(sender_email,smtp_password, smtp_server, smtp_port, recipient
     message_text="send correctly to: " + recipient_email
     # Create message
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
+    msg["Subject"] = Header(subject, 'utf-8').encode()
     msg["From"] = sender_email
     msg["To"] = recipient_email
 
     # Attach HTML content
-    html_part = MIMEText(body, "html")
+    html_part = MIMEText(body, "html", "utf-8")
     msg.attach(html_part)
 
+    server = None
     try:
       server = smtplib.SMTP(smtp_server, smtp_port)
       server.starttls()
       server.login(sender_email, smtp_password)
-      server.sendmail(sender_email, recipient_email, msg.as_string())
+      server.send_message(msg)
       
       logger.info("Email sent successfully! to " + recipient_email)
     except Exception as e:
         logger.info(f"Failed to send email: {str(e)}" + " to: " + recipient_email)
-        message_text=e
+        message_text = e
 
     finally:
-        server.quit()
+        if server:
+            server.quit()
         return message_text
 
 # ---------end------------
@@ -1375,3 +1375,47 @@ def big_url(url):
     base, _ = os.path.splitext(url)
     if base.endswith("_icon") or base.endswith("_big"): return url
     return base + "_big.webp"
+
+def send_order_status_update_email(order):
+    """Sends an email to the customer notifying them of an order status update."""
+    from flask import current_app, render_template
+    from .models import GlobalSetting
+    try:
+        sender_email = current_app.config.get('APP_EMAIL_SENDER')
+        smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
+        smtp_server = current_app.config.get('APP_SMTP_SERVER')
+        smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
+
+        if not sender_email or not smtp_password or not order.user:
+            return
+
+        # Fetch Loyalty Settings
+        loyalty_enabled = GlobalSetting.query.filter_by(key='loyalty_enabled').first()
+        loyalty_percentage = 0
+        if loyalty_enabled and (loyalty_enabled.value or '').lower() == 'true':
+            pct_setting = GlobalSetting.query.filter_by(key='loyalty_percentage').first()
+            if pct_setting:
+                try:
+                    loyalty_percentage = float(pct_setting.value)
+                except (ValueError, TypeError):
+                    loyalty_percentage = 0
+
+        subject = f"Order Update - {order.public_order_id}"
+        status_text = order.status.replace('_', ' ').title()
+
+        # Professional mapping for specific statuses if needed
+        if order.status == 'PAID':
+            status_text = "Payment Received"
+
+        body = render_template('emails/order_status_update.html',
+                               order=order,
+                               status_text=status_text,
+                               loyalty_percentage=loyalty_percentage,
+                               date=datetime.now().strftime("%B %d, %Y"),
+                               host=request.host,
+                               year=datetime.now().year)
+
+        send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, order.user.email, subject, body)
+        logger.debug(f"Status update email ({order.status}) sent to: {order.user.email}")
+    except Exception as e:
+        logger.error(f"Failed to send order status update email: {e}")
