@@ -1402,7 +1402,7 @@ def generate_invoice_pdf(order):
     pdf.cell(0, 10, c_name, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.set_font("helvetica", "", 10)
     if c_address:
-        pdf.multi_cell(0, 5, c_address)
+        pdf.multi_cell(0, 5, c_address, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     if c_vat:
         pdf.cell(0, 5, f"VAT: {c_vat}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     if c_email:
