@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const res = await fetch('/api/admin/settings');
       const settings = await res.json();
 
+      // Load Company Details
+      document.getElementById('company_name').value = settings.company_name || '';
+      document.getElementById('company_address').value = settings.company_address || '';
+      document.getElementById('company_vat').value = settings.company_vat || '';
+      document.getElementById('company_email').value = settings.company_email || '';
+      document.getElementById('company_whatsapp').value = settings.company_whatsapp || '';
+      document.getElementById('company_admin_name').value = settings.company_admin_name || '';
+
       const currenciesRes = await fetch('/api/admin/currencies');
       const currencies = await currenciesRes.json();
 
@@ -74,6 +82,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const globalPromoEnabled = document.getElementById('global_promo_enabled').checked;
     const globalPromoMessage = document.getElementById('global_promo_message').value;
 
+    const companyName = document.getElementById('company_name').value;
+    const companyAddress = document.getElementById('company_address').value;
+    const companyVat = document.getElementById('company_vat').value;
+    const companyEmail = document.getElementById('company_email').value;
+    const companyWhatsapp = document.getElementById('company_whatsapp').value;
+    const companyAdminName = document.getElementById('company_admin_name').value;
+
     try {
       const headers = { 'Content-Type': 'application/json' };
       const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -89,7 +104,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             loyalty_percentage: loyaltyPercentage,
             loyalty_expiration_days: loyaltyExpirationDays,
             global_promo_enabled: globalPromoEnabled,
-            global_promo_message: globalPromoMessage
+            global_promo_message: globalPromoMessage,
+            company_name: companyName,
+            company_address: companyAddress,
+            company_vat: companyVat,
+            company_email: companyEmail,
+            company_whatsapp: companyWhatsapp,
+            company_admin_name: companyAdminName
         })
       });
       if (res.ok) {

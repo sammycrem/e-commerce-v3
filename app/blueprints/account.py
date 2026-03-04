@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, jsonify, Response
 from flask_login import login_required, current_user
 from app.models import db, User, Order, Address, Message, Country, OrderItem, Promotion, Variant, GlobalSetting
-from app.utils import send_emailTls2
+from app.utils import send_emailTls2, generate_invoice_pdf
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import desc
 import traceback
@@ -74,6 +74,28 @@ def order_detail(public_order_id):
     now = datetime.now(timezone.utc)
     cancellation_window_minutes = 60
     return render_template('account/order_detail.html', order=order, now=now, cancellation_window_minutes=cancellation_window_minutes)
+
+@account_bp.route('/orders/<string:public_order_id>/invoice')
+@login_required
+def download_invoice(public_order_id):
+    order = Order.query.filter_by(public_order_id=public_order_id, user_id=current_user.id).first_or_404()
+
+    # Check if order is paid
+    if order.status not in ['PAID', 'READY_FOR_SHIPPING', 'SHIPPED', 'DELIVERED']:
+        flash('Invoice is only available for paid orders.', 'warning')
+        return redirect(url_for('account.order_detail', public_order_id=public_order_id))
+
+    try:
+        pdf_bytes = generate_invoice_pdf(order)
+        return Response(
+            pdf_bytes,
+            mimetype="application/pdf",
+            headers={"Content-Disposition": f"attachment;filename=invoice_{public_order_id}.pdf"}
+        )
+    except Exception as e:
+        traceback.print_exc()
+        flash('Failed to generate invoice.', 'danger')
+        return redirect(url_for('account.order_detail', public_order_id=public_order_id))
 
 @account_bp.route('/orders/<string:public_order_id>/cancel', methods=['POST'])
 @login_required

@@ -173,8 +173,12 @@
                  <p class="mb-3"><span class="fw-bold">Transaction ID:</span> <span class="text-muted small">{{ order.payment_transaction_id or 'N/A' }}</span></p>
 
                  <div class="d-grid">
-                     <button class="btn btn-outline-primary" disabled><i class="bi bi-download me-2"></i>Download Invoice (PDF)</button>
-                     <small class="text-center text-muted mt-2">Invoice generation not yet implemented.</small>
+                     {% if order.status in ['PAID', 'READY_FOR_SHIPPING', 'SHIPPED', 'DELIVERED'] %}
+                        <a href="{{ url_for('account.download_invoice', public_order_id=order.public_order_id) }}" class="btn btn-outline-primary"><i class="bi bi-download me-2"></i>Download Invoice (PDF)</a>
+                     {% else %}
+                        <button class="btn btn-outline-primary" disabled><i class="bi bi-download me-2"></i>Download Invoice (PDF)</button>
+                        <small class="text-center text-muted mt-2">Invoice is available after payment.</small>
+                     {% endif %}
                  </div>
             </div>
         </div>

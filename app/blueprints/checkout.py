@@ -21,13 +21,19 @@ checkout_bp = Blueprint('checkout_bp', __name__)
 from ..models import Address
 
 def get_effective_shipping_address(user_id):
-    """Retrieves the session-selected shipping address or falls back to the first available one."""
+    """Retrieves the session-selected shipping address or falls back to the first available one (prioritizing default)."""
     shipping_address_id = session.get('shipping_address_id')
     if shipping_address_id:
-        addr = Address.query.get(shipping_address_id)
-        if addr and addr.user_id == user_id:
+        # Use .get() if possible, but stay compatible with standard query if needed
+        addr = Address.query.filter_by(id=shipping_address_id, user_id=user_id, address_type='shipping').first()
+        if addr:
             return addr
-    return Address.query.filter_by(user_id=user_id, address_type='shipping').first()
+
+    # Fallback: find default shipping address, otherwise first available
+    addr = Address.query.filter_by(user_id=user_id, address_type='shipping', is_default=True).first()
+    if not addr:
+        addr = Address.query.filter_by(user_id=user_id, address_type='shipping').first()
+    return addr
 
 @checkout_bp.route('/api/create-payment-intent', methods=['POST'])
 @login_required
