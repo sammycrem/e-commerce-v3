@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, abort, send_from_directory, request, jsonify, redirect, url_for, session, current_app, flash
 from collections import defaultdict
 from flask_login import current_user, login_required, logout_user, login_user
-from ..models import User, Product, Variant, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
+from ..models import User, Product, Variant, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem, PasswordResetToken
 from ..extensions import db, limiter, cache
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func
@@ -9,14 +9,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from ..utils import generate_id, create_directory, send_emailTls2, convert_to_webp, generate_image_icon, ensure_icon_for_url
 import os
 import uuid
+import logging
+
+logger = logging.getLogger('app.' + __name__)
 from werkzeug.utils import secure_filename
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 main_bp = Blueprint('main', __name__)
-
-# Constants
-ADMIN_USER = 'admin' # Will be overridden by app config context if needed, but here we might need to access config.
-# Ideally, access config via current_app.config['APP_ADMIN_USER']
 
 @main_bp.route('/')
 def home():
@@ -45,8 +44,8 @@ def home():
             })
 
     seo_metadata = {
-        'title': 'E-Commerce Pro - High Quality Products',
-        'description': 'Welcome to E-Commerce Pro, your one-stop shop for high-quality products delivered to your door.'
+        'title': current_app.config.get('SEO_METADATA_TITLE', 'E-Commerce Pro - High Quality Products'),
+        'description': current_app.config.get('SEO_METADATA_DESCRIPTION', 'Welcome to E-Commerce Pro, your one-stop shop for high-quality products delivered to your door.')
     }
     return render_template('index.html',
                            category_data=category_data,
@@ -246,7 +245,9 @@ def login():
                 return redirect(url_for('main.home'))
             else:
                 flash('Invalid username or password')
-                return render_template('login.html', message_text="Invalid username or password")
+                reset_url = url_for('main.forgot_password')
+                msg = f'Invalid username or password. <a href="{reset_url}" class="alert-link">Forgot your password? Reset it here.</a>'
+                return render_template('login.html', message_text=msg)
         else:
             if current_user.is_authenticated:
                 return redirect(url_for('main.home'))
@@ -260,6 +261,126 @@ def logout():
     session.pop('logged_in', None)
     logout_user()
     return redirect(url_for('main.login'))
+
+@main_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').lower().strip()
+        if not email:
+            return render_template('forgot_password.html', message_text="Email is required")
+
+        # Rate limiting logic (easy way)
+        now = datetime.now(timezone.utc)
+        hour_ago = now - timedelta(hours=1)
+        day_ago = now - timedelta(days=1)
+
+        # Check tokens created for this email or IP
+        # For simplicity, we check by user_id if user exists, else just return generic success
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            # Check rate limits
+            tokens_last_hour = PasswordResetToken.query.filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.created_at >= hour_ago
+            ).count()
+
+            tokens_last_day = PasswordResetToken.query.filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.created_at >= day_ago
+            ).count()
+
+            max_hour = int(current_app.config.get('APP_PASSWORD_RESET_MAX_PER_HOUR', 3))
+            max_day = int(current_app.config.get('APP_PASSWORD_RESET_MAX_PER_DAY', 6))
+
+            if tokens_last_hour >= max_hour:
+                return render_template('forgot_password.html', message_text="Too many reset requests. Please try again in an hour.")
+
+            if tokens_last_day >= max_day:
+                return render_template('forgot_password.html', message_text="Daily limit for reset requests reached.")
+
+            # Create token
+            import secrets
+            token_str = secrets.token_urlsafe(32)
+            expiry_hours = int(current_app.config.get('APP_PASSWORD_RESET_EXPIRY_HOURS', 1))
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token=token_str,
+                expires_at=now + timedelta(hours=expiry_hours)
+            )
+            db.session.add(reset_token)
+            db.session.commit()
+
+            # Send email
+            try:
+                server_url = current_app.config.get('APP_SERVER_URL', 'http://localhost:5000')
+                reset_link = f"{server_url}/reset-password/{token_str}"
+
+                app_name = current_app.config.get('APP_NAME', 'E-Commerce Pro')
+                sender_email = current_app.config.get('APP_EMAIL_SENDER')
+                smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
+                smtp_server = current_app.config.get('APP_SMTP_SERVER')
+                smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
+
+                if sender_email and smtp_password:
+                    subject = f"Reset Your Password - {app_name}"
+                    body = f"""
+                    <html>
+                    <body>
+                        <h1>Password Reset Request</h1>
+                        <p>We received a request to reset your password for {app_name}.</p>
+                        <p>Please click the link below to set a new password. This link will expire in 1 hour.</p>
+                        <a href="{reset_link}">{reset_link}</a>
+                        <p>If you did not request this, you can safely ignore this email.</p>
+                    </body>
+                    </html>
+                    """
+                    send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, email, subject, body)
+            except Exception as e:
+                logger.error(f"Failed to send reset email: {e}")
+                # We still show success to avoid user enumeration
+
+        return render_template('forgot_password.html', message_text="If an account exists with that email, a reset link has been sent.")
+
+    return render_template('forgot_password.html')
+
+@main_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    reset_token = PasswordResetToken.query.filter_by(token=token, is_used=False).first()
+
+    if not reset_token:
+        flash("Invalid or expired reset link.")
+        return redirect(url_for('main.login'))
+
+    if reset_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        flash("Reset link has expired.")
+        return redirect(url_for('main.login'))
+
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not password or len(password) < 8:
+            return render_template('reset_password.html', token=token, message_text="Password must be at least 8 characters.")
+
+        if password != confirm_password:
+            return render_template('reset_password.html', token=token, message_text="Passwords do not match.")
+
+        user = reset_token.user
+
+        # Update password
+        from ..utils import encrypt_password
+        encryption_key = os.environ.get('ENCRYPTION_KEY')
+        user.password = generate_password_hash(password)
+        user.encrypted_password = encrypt_password(password, encryption_key)
+
+        reset_token.is_used = True
+        db.session.commit()
+
+        flash("Password updated successfully. You can now login.")
+        return redirect(url_for('main.login'))
+
+    return render_template('reset_password.html', token=token)
 
 @main_bp.route('/signup', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
@@ -281,8 +402,34 @@ def signup():
                 new_user = User(username=username, user_id=user_id , password=generate_password_hash(password), encrypted_password=encrypted_pw, email=email)
                 db.session.add(new_user)
                 db.session.commit()
-                # Email sending logic... simplified for blueprint move
-                # We need to access SERVER_URL, etc. from config
+
+                # Send welcome and validation email
+                try:
+                    server_url = current_app.config.get('APP_SERVER_URL')
+                    validation_link = f"{server_url}/validate?id={new_user.user_id}&username={new_user.username}"
+
+                    sender_email = current_app.config.get('APP_EMAIL_SENDER')
+                    smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
+                    smtp_server = current_app.config.get('APP_SMTP_SERVER')
+                    smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
+
+                    if sender_email and smtp_password:
+                        app_name = current_app.config.get('APP_NAME', 'E-Commerce Pro')
+                        subject = f"Welcome to {app_name}!"
+                        body = f"""
+                        <html>
+                        <body>
+                            <h1>Welcome, {new_user.username}!</h1>
+                            <p>Thank you for signing up with {app_name}.</p>
+                            <p>Please click the link below to validate your account:</p>
+                            <a href="{validation_link}">{validation_link}</a>
+                            <p>If you did not sign up for this account, please ignore this email.</p>
+                        </body>
+                        </html>
+                        """
+                        send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, new_user.email, subject, body)
+                except Exception as email_err:
+                    logger.error(f"Failed to send signup email: {email_err}")
 
                 create_directory(os.path.join(current_app.config['APP_WWW'], new_user.user_id) if 'APP_WWW' in current_app.config else 'www') # logic from app.py
 
@@ -292,7 +439,7 @@ def signup():
                 flash('User created successfully. Please login.')
                 return redirect(url_for('main.login'))
             except Exception as e:
-                print(f"An error occurred: signup  {str(e)}")
+                logger.error(f"An error occurred during signup: {str(e)}")
                 return render_template('signup.html', message_text=str(e))
 
     return render_template('signup.html')
@@ -317,7 +464,6 @@ def validate_user():
 @main_bp.route("/list")                 #admin only
 @login_required
 def user_list():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.is_authenticated and current_user.username==admin_user:
         users = db.session.execute(db.select(User).order_by(User.username)).scalars()
@@ -328,7 +474,6 @@ def user_list():
 @main_bp.route("/user/<int:id>")
 @login_required
 def user_detail(id):
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.is_authenticated and current_user.username==admin_user or current_user.id==id:
         user = db.get_or_404(User, id)
@@ -339,7 +484,6 @@ def user_detail(id):
 @main_bp.route("/user/<int:id>/delete", methods=["GET", "POST"])
 @login_required
 def user_delete(id):
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.is_authenticated and (current_user.username==admin_user or current_user.id==id):
         user = db.get_or_404(User, id)
@@ -383,7 +527,6 @@ def export_static(subpath):
 @main_bp.route("/authorized_keys" , methods=['GET', 'POST'])
 @login_required
 def get_authorized_keys():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username == admin_user:
         return jsonify({'key': "_authorized_keys", '_url': request.remote_addr}), 200
@@ -394,7 +537,6 @@ def get_authorized_keys():
 @main_bp.route('/admin')
 @login_required
 def admin_page():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)
@@ -403,7 +545,6 @@ def admin_page():
 @main_bp.route('/admin/accounting')
 @login_required
 def admin_accounting():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)
@@ -413,7 +554,6 @@ def admin_accounting():
 @main_bp.route("/admin/orders/<string:public_order_id>")
 @login_required
 def admin_order_detail_by_public(public_order_id):
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)
@@ -423,7 +563,6 @@ def admin_order_detail_by_public(public_order_id):
 @main_bp.route("/admin/orders")
 @login_required
 def admin_orders():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)
@@ -432,7 +571,6 @@ def admin_orders():
 @main_bp.route("/admin/orders/<int:order_id>")
 @login_required
 def admin_order_detail(order_id):
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)

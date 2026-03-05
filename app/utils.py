@@ -5,34 +5,26 @@ from datetime import datetime, timezone, timedelta
 from flask_mail import Mail, Message
 import smtplib, ssl
 from email.mime.text import MIMEText
+from email.header import Header
+from email.mime.multipart import MIMEMultipart
 
 import os
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify, request, render_template , render_template_string
+from flask import Flask, jsonify, request, render_template , render_template_string, current_app
 import re
 import json
 import html
 import requests
-import re
 import urllib.parse
 from urllib.parse import urlparse, parse_qs
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from PIL import Image
 import shutil
 from decimal import Decimal, ROUND_HALF_UP
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-file_handler = logging.FileHandler('util.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+logger = logging.getLogger('app.' + __name__)
 
 def str_to_bool(string):
   """Converts a string to a boolean value.
@@ -64,6 +56,7 @@ def generate_id(length):
 def send_email(sender_email,smtp_password, smtp_server, smtp_port, recipient_email, subject, body):
     """Sends an email using STARTTLS."""
     message_text="send correctly to: " + recipient_email
+    server = None
     try:
       # Connect to the SMTP server using STARTTLS
       server = smtplib.SMTP(smtp_server, smtp_port)  # Replace with your SMTP server and port
@@ -72,21 +65,20 @@ def send_email(sender_email,smtp_password, smtp_server, smtp_port, recipient_ema
       server.login(sender_email, smtp_password)  # Replace with your email password
 
       # Create the email message
-      message = MIMEText(body, _subtype='html')
+      message = MIMEText(body, 'html', 'utf-8')
       message['From'] = sender_email
       message['To'] = recipient_email
-      message['Subject'] = subject
-
-      #logger.info('Sendmail' + str(server.))
+      message['Subject'] = Header(subject, 'utf-8').encode()
 
       # Send the email
-      server.sendmail(sender_email, recipient_email, message.as_string())
+      server.send_message(message)
       
     except Exception as e:
-       logger.info('Sendmail' + str(e))
-       message_text=e
+       logger.info('Sendmail error: ' + str(e))
+       message_text = e
     finally:
-        server.quit()
+        if server:
+            server.quit()
         return message_text
 # ---------end------------
 
@@ -95,27 +87,29 @@ def send_emailTls2(sender_email,smtp_password, smtp_server, smtp_port, recipient
     message_text="send correctly to: " + recipient_email
     # Create message
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
+    msg["Subject"] = Header(subject, 'utf-8').encode()
     msg["From"] = sender_email
     msg["To"] = recipient_email
 
     # Attach HTML content
-    html_part = MIMEText(body, "html")
+    html_part = MIMEText(body, "html", "utf-8")
     msg.attach(html_part)
 
+    server = None
     try:
       server = smtplib.SMTP(smtp_server, smtp_port)
       server.starttls()
       server.login(sender_email, smtp_password)
-      server.sendmail(sender_email, recipient_email, msg.as_string())
+      server.send_message(msg)
       
       logger.info("Email sent successfully! to " + recipient_email)
     except Exception as e:
         logger.info(f"Failed to send email: {str(e)}" + " to: " + recipient_email)
-        message_text=e
+        message_text = e
 
     finally:
-        server.quit()
+        if server:
+            server.quit()
         return message_text
 
 # ---------end------------
@@ -1375,3 +1369,177 @@ def big_url(url):
     base, _ = os.path.splitext(url)
     if base.endswith("_icon") or base.endswith("_big"): return url
     return base + "_big.webp"
+
+def generate_invoice_pdf(order):
+    """
+    Generates a PDF invoice for the given order.
+    Returns a byte array of the PDF content.
+    """
+    from fpdf import FPDF
+    from fpdf.enums import XPos, YPos
+    from .models import GlobalSetting
+
+    # Fetch Company Details from GlobalSetting
+    settings = {s.key: s.value for s in GlobalSetting.query.all()}
+    c_name = settings.get('company_name', current_app.config.get('APP_NAME', 'E-Commerce Pro'))
+    c_address = settings.get('company_address', '')
+    c_vat = settings.get('company_vat', '')
+    c_email = settings.get('company_email', '')
+    c_whatsapp = settings.get('company_whatsapp', '')
+    c_admin = settings.get('company_admin_name', '')
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("helvetica", "B", 16)
+
+    # Company Header
+    pdf.cell(0, 10, c_name, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.set_font("helvetica", "", 10)
+    if c_address:
+        pdf.multi_cell(0, 5, c_address, new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    if c_vat:
+        pdf.cell(0, 5, f"VAT: {c_vat}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    if c_email:
+        pdf.cell(0, 5, f"Email: {c_email}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    if c_whatsapp:
+        pdf.cell(0, 5, f"WhatsApp: {c_whatsapp}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    if c_admin:
+        pdf.cell(0, 5, f"Contact: {c_admin}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    pdf.ln(10)
+    pdf.set_font("helvetica", "B", 14)
+    pdf.cell(0, 10, f"INVOICE: {order.public_order_id}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.set_font("helvetica", "", 10)
+    pdf.cell(0, 5, f"Date: {order.created_at.strftime('%Y-%m-%d %H:%M')}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(0, 5, f"Status: {order.status}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+
+    pdf.ln(5)
+
+    # Customer Info
+    pdf.set_font("helvetica", "B", 11)
+    pdf.cell(90, 7, "Bill To:", new_x=XPos.RIGHT, new_y=YPos.TOP)
+    pdf.cell(90, 7, "Ship To:", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.set_font("helvetica", "", 10)
+
+    bill = order.billing_address_snapshot or order.shipping_address_snapshot
+    ship = order.shipping_address_snapshot
+
+    if bill:
+        pdf.cell(90, 5, f"{bill.get('first_name')} {bill.get('last_name')}", new_x=XPos.RIGHT, new_y=YPos.TOP)
+    if ship:
+        pdf.cell(90, 5, f"{ship.get('first_name')} {ship.get('last_name')}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    else:
+        pdf.ln(5)
+
+    if bill:
+        pdf.cell(90, 5, bill.get('address_line_1'), new_x=XPos.RIGHT, new_y=YPos.TOP)
+    if ship:
+        pdf.cell(90, 5, ship.get('address_line_1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    else:
+        pdf.ln(5)
+
+    if bill:
+        pdf.cell(90, 5, f"{bill.get('city')}, {bill.get('postal_code')}", new_x=XPos.RIGHT, new_y=YPos.TOP)
+    if ship:
+        pdf.cell(90, 5, f"{ship.get('city')}, {ship.get('postal_code')}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    else:
+        pdf.ln(5)
+
+    if bill:
+        pdf.cell(90, 5, bill.get('country_iso_code'), new_x=XPos.RIGHT, new_y=YPos.TOP)
+    if ship:
+        pdf.cell(90, 5, ship.get('country_iso_code'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    else:
+        pdf.ln(5)
+
+    pdf.ln(10)
+
+    # Order Items Table
+    pdf.set_font("helvetica", "B", 10)
+    pdf.cell(80, 7, "Product", border=1)
+    pdf.cell(30, 7, "SKU", border=1)
+    pdf.cell(25, 7, "Price", border=1, align='C')
+    pdf.cell(20, 7, "Qty", border=1, align='C')
+    pdf.cell(35, 7, "Total", border=1, align='R')
+    pdf.ln()
+
+    pdf.set_font("helvetica", "", 10)
+    currency = current_app.config.get('APP_DEFAULT_CURRENCY', 'EUR')
+    for item in order.items:
+        name = item.product_snapshot.get('name', 'Unknown')
+        sku = item.variant_sku
+        price = f"{(item.unit_price_cents / 100):.2f} {currency}"
+        qty = str(item.quantity)
+        total = f"{(item.unit_price_cents * item.quantity / 100):.2f} {currency}"
+
+        pdf.cell(80, 7, name[:40], border=1)
+        pdf.cell(30, 7, sku, border=1)
+        pdf.cell(25, 7, price, border=1, align='C')
+        pdf.cell(20, 7, qty, border=1, align='C')
+        pdf.cell(35, 7, total, border=1, align='R')
+        pdf.ln()
+
+    # Totals
+    pdf.ln(5)
+    pdf.set_font("helvetica", "B", 10)
+    pdf.cell(155, 7, "Subtotal:", align='R')
+    pdf.cell(35, 7, f"{(order.subtotal_cents / 100):.2f} {currency}", align='R')
+    pdf.ln()
+    pdf.cell(155, 7, "Shipping:", align='R')
+    pdf.cell(35, 7, f"{(order.shipping_cost_cents / 100):.2f} {currency}", align='R')
+    pdf.ln()
+    pdf.cell(155, 7, "Discount:", align='R')
+    pdf.cell(35, 7, f"-{(order.discount_cents / 100):.2f} {currency}", align='R')
+    pdf.ln()
+    pdf.cell(155, 7, "VAT:", align='R')
+    pdf.cell(35, 7, f"{(order.vat_cents / 100):.2f} {currency}", align='R')
+    pdf.ln()
+    pdf.set_font("helvetica", "B", 12)
+    pdf.cell(155, 10, "Total:", align='R')
+    pdf.cell(35, 10, f"{(order.total_cents / 100):.2f} {currency}", align='R')
+
+    return bytes(pdf.output())
+
+def send_order_status_update_email(order):
+    """Sends an email to the customer notifying them of an order status update."""
+    from flask import current_app, render_template
+    from .models import GlobalSetting
+    try:
+        sender_email = current_app.config.get('APP_EMAIL_SENDER')
+        smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
+        smtp_server = current_app.config.get('APP_SMTP_SERVER')
+        smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
+
+        if not sender_email or not smtp_password or not order.user:
+            return
+
+        # Fetch Loyalty Settings
+        loyalty_enabled = GlobalSetting.query.filter_by(key='loyalty_enabled').first()
+        loyalty_percentage = 0
+        if loyalty_enabled and (loyalty_enabled.value or '').lower() == 'true':
+            pct_setting = GlobalSetting.query.filter_by(key='loyalty_percentage').first()
+            if pct_setting:
+                try:
+                    loyalty_percentage = float(pct_setting.value)
+                except (ValueError, TypeError):
+                    loyalty_percentage = 0
+
+        subject = f"Order Update - {order.public_order_id}"
+        status_text = order.status.replace('_', ' ').title()
+
+        # Professional mapping for specific statuses if needed
+        if order.status == 'PAID':
+            status_text = "Payment Received"
+
+        body = render_template('emails/order_status_update.html',
+                               order=order,
+                               status_text=status_text,
+                               loyalty_percentage=loyalty_percentage,
+                               date=datetime.now().strftime("%B %d, %Y"),
+                               host=request.host,
+                               year=datetime.now().year)
+
+        send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, order.user.email, subject, body)
+        logger.debug(f"Status update email ({order.status}) sent to: {order.user.email}")
+    except Exception as e:
+        logger.error(f"Failed to send order status update email: {e}")

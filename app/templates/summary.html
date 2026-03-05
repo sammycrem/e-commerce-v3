@@ -215,6 +215,7 @@
     // If we are confirming payment here, we need the stripe object.
     window.stripePublicKey = "{{ config['APP_STRIPE_PUBLISHABLE_KEY'] }}";
     window.selectedPaymentMethod = "{{ selected_payment }}";
+    window.stripeReturnUrl = "{{ url_for('checkout_bp.order_success', order_id='{ORDER_ID}', _external=True) }}";
     // We might need to persist the clientSecret if we created it on the previous page?
     // Or we create it now?
     // Actually, best flow for Stripe Elements is:

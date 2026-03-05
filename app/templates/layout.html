@@ -6,12 +6,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {% block meta_tags %}
-    <meta name="description" content="{{ seo_metadata.description if seo_metadata and seo_metadata.description else 'E-Commerce Pro - High quality products delivered to your door.' }}">
-    <meta name="keywords" content="ecommerce, shop, products, {{ seo_metadata.title if seo_metadata and seo_metadata.title else '' }}">
+    <meta name="description" content="{{ seo_metadata.description if seo_metadata and seo_metadata.description else app_name ~ ' - High quality products delivered to your door.' }}">
+    <meta property="og:title" content="{{ seo_metadata.title if seo_metadata and seo_metadata.title else app_name }}">
     {% endblock %}
 
     {% block og_tags %}
-    <meta property="og:title" content="{{ seo_metadata.title if seo_metadata and seo_metadata.title else 'E-Commerce Pro' }}">
+    <meta property="og:title" content="{{ seo_metadata.title if seo_metadata and seo_metadata.title else app_name }}">
     <meta property="og:description" content="{{ seo_metadata.description if seo_metadata and seo_metadata.description else 'High quality products delivered to your door.' }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ request.url }}">
@@ -40,7 +40,7 @@
         <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
             <div class="container">
                 <a class="navbar-brand fw-bold" href="/">
-                    <i class="bi bi-shop me-2"></i>E-Commerce Pro
+                    <i class="bi bi-shop me-2"></i>{{ app_name }}
                 </a>
                 <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -157,8 +157,8 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-4 mb-4 mb-md-0">
-                    <h5 class="text-uppercase fw-bold mb-4 text-white">E-Commerce Pro</h5>
-                    <p class="text-white">High-quality products delivered to your door. Experience professional shopping with us.</p>
+                    <h5 class="text-uppercase fw-bold mb-4 text-white">{{ app_name }}</h5>
+                    <p class="text-white">{{ footer_description }}</p>
                 </div>
                 <div class="col-md-2 mb-4 mb-md-0">
                     <h5 class="text-uppercase fw-bold mb-4 text-white">Links</h5>
@@ -187,7 +187,7 @@
             <hr class="bg-secondary mt-4 mb-4">
             <div class="row align-items-center">
                 <div class="col-md-7 col-lg-8 text-center text-md-start">
-                    <p class="mb-0 text-white">&copy; {{ now.year if now else '2026' }} E-Commerce Pro. All rights reserved.</p>
+                    <p class="mb-0 text-white">&copy; {{ now.year if now else '2026' }} {{ app_name }}. All rights reserved.</p>
                 </div>
                 <div class="col-md-5 col-lg-4 text-center text-md-end">
                     <ul class="list-inline mb-0">

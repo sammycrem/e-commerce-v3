@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, current_app, jsonify, Response
 from flask_login import login_required, current_user
 from app.models import db, User, Order, Address, Message, Country, OrderItem, Promotion, Variant, GlobalSetting
-from app.utils import send_emailTls2
+from app.utils import send_emailTls2, generate_invoice_pdf
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import desc
 import traceback
@@ -56,13 +56,13 @@ def profile():
 def orders():
     print(f"DEBUG: Orders route. User: {current_user.is_authenticated}, ID: {current_user.id if current_user.is_authenticated else 'None'}")
     page = request.args.get('page', 1, type=int)
-    per_page = 10
+    per_page = int(current_app.config.get('APP_DEFAULT_PER_PAGE', 10))
     pagination = Order.query.filter_by(user_id=current_user.id).order_by(desc(Order.created_at)).paginate(page=page, per_page=per_page, error_out=False)
 
     # Check grace period window for each order
     now = datetime.now(timezone.utc)
-    cancellation_window_minutes = 60 # Default
-    # Could load from GlobalSettings if we want to make it configurable
+    cancellation_window_seconds = int(current_app.config.get('APP_ORDER_CANCELLATION_WINDOW_SECONDS', 3600))
+    cancellation_window_minutes = cancellation_window_seconds // 60
 
     return render_template('account/orders.html', pagination=pagination, now=now, cancellation_window_minutes=cancellation_window_minutes, timezone=timezone)
 
@@ -72,8 +72,31 @@ def order_detail(public_order_id):
     print(f"DEBUG: Order Detail {public_order_id}. User: {current_user.id}")
     order = Order.query.filter_by(public_order_id=public_order_id, user_id=current_user.id).first_or_404()
     now = datetime.now(timezone.utc)
-    cancellation_window_minutes = 60
+    cancellation_window_seconds = int(current_app.config.get('APP_ORDER_CANCELLATION_WINDOW_SECONDS', 3600))
+    cancellation_window_minutes = cancellation_window_seconds // 60
     return render_template('account/order_detail.html', order=order, now=now, cancellation_window_minutes=cancellation_window_minutes)
+
+@account_bp.route('/orders/<string:public_order_id>/invoice')
+@login_required
+def download_invoice(public_order_id):
+    order = Order.query.filter_by(public_order_id=public_order_id, user_id=current_user.id).first_or_404()
+
+    # Check if order is paid
+    if order.status not in ['PAID', 'READY_FOR_SHIPPING', 'SHIPPED', 'DELIVERED']:
+        flash('Invoice is only available for paid orders.', 'warning')
+        return redirect(url_for('account.order_detail', public_order_id=public_order_id))
+
+    try:
+        pdf_bytes = generate_invoice_pdf(order)
+        return Response(
+            pdf_bytes,
+            mimetype="application/pdf",
+            headers={"Content-Disposition": f"attachment;filename=invoice_{public_order_id}.pdf"}
+        )
+    except Exception as e:
+        traceback.print_exc()
+        flash('Failed to generate invoice.', 'danger')
+        return redirect(url_for('account.order_detail', public_order_id=public_order_id))
 
 @account_bp.route('/orders/<string:public_order_id>/cancel', methods=['POST'])
 @login_required
@@ -93,7 +116,8 @@ def cancel_order(public_order_id):
     # Logic: Time Window Check
     created_at = order.created_at.replace(tzinfo=timezone.utc) if order.created_at.tzinfo is None else order.created_at
     now = datetime.now(timezone.utc)
-    if (now - created_at).total_seconds() > 3600: # 60 minutes
+    window = int(current_app.config.get('APP_ORDER_CANCELLATION_WINDOW_SECONDS', 3600))
+    if (now - created_at).total_seconds() > window:
         flash('Cancellation period has expired.', 'danger')
         return redirect(url_for('account.orders'))
 

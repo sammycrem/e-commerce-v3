@@ -17,3 +17,4 @@ Flask-Caching
 pymemcache
 mollie-api-python
 stripe
+fpdf2

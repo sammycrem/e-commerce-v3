@@ -39,6 +39,9 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link {{ 'active' if active_tab == 'settings' else '' }} tab-button" data-tab="settings" id="settings-tab" type="button">Settings</button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link tab-button" data-tab="logs" id="logs-tab" type="button">Logs</button>
+        </li>
     </ul>
 
     <!-- GALLERY TAB -->
@@ -365,15 +368,67 @@
         </div>
     </div>
 
+    <!-- LOGS TAB -->
+    <div id="tab-logs" class="tab-content d-none">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Server Logs</h2>
+                <div class="d-flex gap-2">
+                    <button id="btn-refresh-logs" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-sync-alt me-1"></i> Refresh
+                    </button>
+                    <button id="btn-clear-logs" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash-alt me-1"></i> Clear Logs
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="bg-dark text-light p-3 rounded overflow-auto" style="max-height: 600px; font-family: monospace; white-space: pre-wrap;" id="logs-container">
+                    Loading logs...
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- SETTINGS TAB -->
     <div id="tab-settings" class="tab-content {{ 'd-none' if active_tab != 'settings' else '' }}">
         <div class="row g-4">
             <div class="col-lg-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-white">
-                        <h2 class="h5 mb-0">Application Settings</h2>
+                        <h2 class="h5 mb-0">Settings</h2>
                     </div>
                     <div class="card-body">
+                        <div class="mb-4">
+                            <h3 class="h6 fw-bold mb-3">Company Details</h3>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Company Name</label>
+                                <input type="text" id="company_name" class="form-control" placeholder="e.g. My Shop Ltd.">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Address</label>
+                                <textarea id="company_address" class="form-control" rows="2" placeholder="Street, City, Country, Zip"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">VAT Number</label>
+                                <input type="text" id="company_vat" class="form-control" placeholder="e.g. BE0123.456.789">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Contact Email</label>
+                                <input type="email" id="company_email" class="form-control" placeholder="contact@example.com">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">WhatsApp</label>
+                                <input type="text" id="company_whatsapp" class="form-control" placeholder="+32 123 45 67 89">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Admin Contact Name</label>
+                                <input type="text" id="company_admin_name" class="form-control" placeholder="John Doe">
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
                         <div class="mb-4">
                             <h3 class="h6 fw-bold mb-3">Global Currency</h3>
                             <div class="mb-3">
@@ -899,4 +954,5 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="{{ url_for('static', filename='js/admin_groups.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_gallery.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_settings.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_logs.js') }}" defer></script>
 {% endblock %}
