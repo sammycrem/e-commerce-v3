@@ -36,7 +36,7 @@ def check_admin():
 
 # Public Product APIs
 @api_bp.route('/products', methods=['GET'])
-@cache.cached(timeout=60, query_string=True)
+@cache.cached(timeout=60, query_string=True) # Static timeout for decorator
 def list_products():
     print("DEBUG: list_products executing query...")
     page = request.args.get('page', 1, type=int)

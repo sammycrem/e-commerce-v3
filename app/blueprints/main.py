@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, abort, send_from_directory, request, jsonify, redirect, url_for, session, current_app, flash
 from collections import defaultdict
 from flask_login import current_user, login_required, logout_user, login_user
-from ..models import User, Product, Variant, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
+from ..models import User, Product, Variant, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem, PasswordResetToken
 from ..extensions import db, limiter, cache
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func
@@ -13,7 +13,7 @@ import logging
 
 logger = logging.getLogger('app.' + __name__)
 from werkzeug.utils import secure_filename
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 main_bp = Blueprint('main', __name__)
 
@@ -245,7 +245,9 @@ def login():
                 return redirect(url_for('main.home'))
             else:
                 flash('Invalid username or password')
-                return render_template('login.html', message_text="Invalid username or password")
+                reset_url = url_for('main.forgot_password')
+                msg = f'Invalid username or password. <a href="{reset_url}" class="alert-link">Forgot your password? Reset it here.</a>'
+                return render_template('login.html', message_text=msg)
         else:
             if current_user.is_authenticated:
                 return redirect(url_for('main.home'))
@@ -259,6 +261,126 @@ def logout():
     session.pop('logged_in', None)
     logout_user()
     return redirect(url_for('main.login'))
+
+@main_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').lower().strip()
+        if not email:
+            return render_template('forgot_password.html', message_text="Email is required")
+
+        # Rate limiting logic (easy way)
+        now = datetime.now(timezone.utc)
+        hour_ago = now - timedelta(hours=1)
+        day_ago = now - timedelta(days=1)
+
+        # Check tokens created for this email or IP
+        # For simplicity, we check by user_id if user exists, else just return generic success
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            # Check rate limits
+            tokens_last_hour = PasswordResetToken.query.filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.created_at >= hour_ago
+            ).count()
+
+            tokens_last_day = PasswordResetToken.query.filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.created_at >= day_ago
+            ).count()
+
+            max_hour = int(current_app.config.get('APP_PASSWORD_RESET_MAX_PER_HOUR', 3))
+            max_day = int(current_app.config.get('APP_PASSWORD_RESET_MAX_PER_DAY', 6))
+
+            if tokens_last_hour >= max_hour:
+                return render_template('forgot_password.html', message_text="Too many reset requests. Please try again in an hour.")
+
+            if tokens_last_day >= max_day:
+                return render_template('forgot_password.html', message_text="Daily limit for reset requests reached.")
+
+            # Create token
+            import secrets
+            token_str = secrets.token_urlsafe(32)
+            expiry_hours = int(current_app.config.get('APP_PASSWORD_RESET_EXPIRY_HOURS', 1))
+            reset_token = PasswordResetToken(
+                user_id=user.id,
+                token=token_str,
+                expires_at=now + timedelta(hours=expiry_hours)
+            )
+            db.session.add(reset_token)
+            db.session.commit()
+
+            # Send email
+            try:
+                server_url = current_app.config.get('APP_SERVER_URL', 'http://localhost:5000')
+                reset_link = f"{server_url}/reset-password/{token_str}"
+
+                app_name = current_app.config.get('APP_NAME', 'E-Commerce Pro')
+                sender_email = current_app.config.get('APP_EMAIL_SENDER')
+                smtp_password = current_app.config.get('APP_EMAIL_PASSWORD')
+                smtp_server = current_app.config.get('APP_SMTP_SERVER')
+                smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
+
+                if sender_email and smtp_password:
+                    subject = f"Reset Your Password - {app_name}"
+                    body = f"""
+                    <html>
+                    <body>
+                        <h1>Password Reset Request</h1>
+                        <p>We received a request to reset your password for {app_name}.</p>
+                        <p>Please click the link below to set a new password. This link will expire in 1 hour.</p>
+                        <a href="{reset_link}">{reset_link}</a>
+                        <p>If you did not request this, you can safely ignore this email.</p>
+                    </body>
+                    </html>
+                    """
+                    send_emailTls2(sender_email, smtp_password, smtp_server, smtp_port, email, subject, body)
+            except Exception as e:
+                logger.error(f"Failed to send reset email: {e}")
+                # We still show success to avoid user enumeration
+
+        return render_template('forgot_password.html', message_text="If an account exists with that email, a reset link has been sent.")
+
+    return render_template('forgot_password.html')
+
+@main_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    reset_token = PasswordResetToken.query.filter_by(token=token, is_used=False).first()
+
+    if not reset_token:
+        flash("Invalid or expired reset link.")
+        return redirect(url_for('main.login'))
+
+    if reset_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        flash("Reset link has expired.")
+        return redirect(url_for('main.login'))
+
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not password or len(password) < 8:
+            return render_template('reset_password.html', token=token, message_text="Password must be at least 8 characters.")
+
+        if password != confirm_password:
+            return render_template('reset_password.html', token=token, message_text="Passwords do not match.")
+
+        user = reset_token.user
+
+        # Update password
+        from ..utils import encrypt_password
+        encryption_key = os.environ.get('ENCRYPTION_KEY')
+        user.password = generate_password_hash(password)
+        user.encrypted_password = encrypt_password(password, encryption_key)
+
+        reset_token.is_used = True
+        db.session.commit()
+
+        flash("Password updated successfully. You can now login.")
+        return redirect(url_for('main.login'))
+
+    return render_template('reset_password.html', token=token)
 
 @main_bp.route('/signup', methods=['GET', 'POST'])
 @limiter.limit("5 per minute")
@@ -283,7 +405,7 @@ def signup():
 
                 # Send welcome and validation email
                 try:
-                    server_url = current_app.config.get('APP_SERVER_URL', 'http://localhost:5000')
+                    server_url = current_app.config.get('APP_SERVER_URL')
                     validation_link = f"{server_url}/validate?id={new_user.user_id}&username={new_user.username}"
 
                     sender_email = current_app.config.get('APP_EMAIL_SENDER')

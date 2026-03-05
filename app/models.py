@@ -248,3 +248,14 @@ class Review(db.Model):
 
     user = db.relationship('User', back_populates='reviews')
     product = db.relationship('Product', back_populates='reviews')
+
+class PasswordResetToken(db.Model):
+    __tablename__ = 'password_reset_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    token = db.Column(db.String(100), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    expires_at = db.Column(db.DateTime, nullable=False)
+    is_used = db.Column(db.Boolean, default=False)
+
+    user = db.relationship('User', backref=db.backref('reset_tokens', lazy='dynamic'))
