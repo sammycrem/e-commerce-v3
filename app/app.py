@@ -100,13 +100,13 @@ def create_app(test_config=None):
             'pool_pre_ping': True
         }
 
-    # Caching Config (Defaults)
-    app.config['CACHE_TYPE'] = 'SimpleCache'
-    app.config['CACHE_DEFAULT_TIMEOUT'] = 300
+    # Caching Config
+    app.config['CACHE_TYPE'] = app.config.get('APP_CACHE_TYPE', 'SimpleCache')
+    app.config['CACHE_DEFAULT_TIMEOUT'] = int(app.config.get('APP_CACHE_DEFAULT_TIMEOUT', 300))
 
     # Rate Limiting
-    app.config['RATELIMIT_DEFAULT'] = "200 per day"
-    app.config['RATELIMIT_STORAGE_URI'] = "memory://"
+    app.config['RATELIMIT_DEFAULT'] = app.config.get('APP_RATELIMIT_DEFAULT', "200 per day")
+    app.config['RATELIMIT_STORAGE_URI'] = app.config.get('APP_RATELIMIT_STORAGE_URI', "memory://")
 
     # Apply test config (overrides defaults)
     # MOVED this to the end of config block to ensure it overrides defaults
@@ -126,7 +126,7 @@ def create_app(test_config=None):
     cache.init_app(app)
     csrf.init_app(app)
 
-    CORS(app, origins=["http://localhost:8000"]) # Config?
+    CORS(app, origins=app.config.get('APP_CORS_ORIGINS', 'http://localhost:8000').split(';'))
 
     # Blueprints
     app.register_blueprint(main_bp)
@@ -185,6 +185,15 @@ def create_app(test_config=None):
             'default_vat_rate': default_vat_rate,
             'vat_calculation_mode': vat_calculation_mode,
             'admin_user': app.config.get('APP_ADMIN_USER'),
+            'app_name': app.config.get('APP_NAME', 'E-Commerce Pro'),
+            'app_server_url': app.config.get('APP_SERVER_URL', 'http://localhost:5000'),
+            'footer_description': app.config.get('APP_FOOTER_DESCRIPTION', 'High-quality products delivered to your door. Experience professional shopping with us.'),
+            'contact_address': app.config.get('APP_CONTACT_ADDRESS', 'New York, NY 10012, US'),
+            'contact_email': app.config.get('APP_CONTACT_EMAIL', 'support@ecommercepro.com'),
+            'contact_email_info': app.config.get('APP_CONTACT_EMAIL_INFO', 'info@ecommercepro.com'),
+            'contact_phone': app.config.get('APP_CONTACT_PHONE', '+1 (555) 123-4567'),
+            'contact_phone_secondary': app.config.get('APP_CONTACT_PHONE_SECONDARY', '+ 01 234 567 88'),
+            'contact_print': app.config.get('APP_CONTACT_PRINT', '+ 01 234 567 89'),
             'global_promo_message': global_promo_message,
             'global_promo_enabled': global_promo_enabled,
             'categories': categories,
@@ -221,7 +230,7 @@ def create_app(test_config=None):
         #if not allowed_list:
         #    allowed_list = "https://cdn.jsdelivr.net"
 
-        csp = (
+        csp = app.config.get('APP_CSP', (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://js.stripe.com; "
             "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
@@ -229,7 +238,7 @@ def create_app(test_config=None):
             "font-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; "
             "connect-src 'self' https://cdn.jsdelivr.net https://api.stripe.com; "
             "frame-src 'self' https://js.stripe.com;"
-        )       
+        ))
 
         response.headers['Content-Security-Policy'] = csp
         response.headers['X-Content-Type-Options'] = 'nosniff'

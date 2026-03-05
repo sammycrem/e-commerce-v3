@@ -40,7 +40,7 @@ def check_admin():
 def list_products():
     print("DEBUG: list_products executing query...")
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)
+    per_page = request.args.get('per_page', int(current_app.config.get('APP_DEFAULT_PER_PAGE', 10)), type=int)
     category = request.args.get('category', type=str)
     group_id = request.args.get('group_id', type=int)
     group_slug = request.args.get('group_slug', type=str)
@@ -424,7 +424,8 @@ def admin_upload_image():
         big_path = os.path.join(current_app.root_path, 'static', 'uploads', 'products', big_filename)
         generate_image_icon(filepath, big_path, height=600)
 
-        url = f"/static/uploads/products/{unique_filename}"
+        upload_folder_url = current_app.config.get('APP_UPLOAD_FOLDER', 'static/uploads/products')
+        url = f"/{upload_folder_url}/{unique_filename}"
         return jsonify({"url": url}), 201
     return jsonify({"error": "File type not allowed"}), 400
 
@@ -433,7 +434,7 @@ def admin_upload_image():
 def admin_list_orders():
     check_admin()
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    per_page = request.args.get('per_page', int(current_app.config.get('APP_DEFAULT_PER_PAGE', 20)), type=int)
     status = request.args.get('status', type=str)
     q = request.args.get('q', type=str)
 
@@ -1250,9 +1251,10 @@ def admin_gallery_list():
     usage_map = {}
 
     # Product Images
+    upload_folder_url = current_app.config.get('APP_UPLOAD_FOLDER', 'static/uploads/products')
     p_imgs = ProductImage.query.options(joinedload(ProductImage.product)).all()
     for pi in p_imgs:
-        if not pi.url or '/static/uploads/products/' not in pi.url:
+        if not pi.url or f'/{upload_folder_url}/' not in pi.url:
             continue
         fname = os.path.basename(pi.url)
         # Normalize (remove _icon, _big if present in DB url, though usually DB has main or specific)
@@ -1270,7 +1272,7 @@ def admin_gallery_list():
     # Variant Images
     v_imgs = VariantImage.query.options(joinedload(VariantImage.variant).joinedload(Variant.product)).all()
     for vi in v_imgs:
-        if not vi.url or '/static/uploads/products/' not in vi.url:
+        if not vi.url or f'/{upload_folder_url}/' not in vi.url:
             continue
         fname = os.path.basename(vi.url)
         if fname not in usage_map: usage_map[fname] = []
@@ -1301,7 +1303,7 @@ def admin_gallery_list():
 
             files.append({
                 "filename": f,
-                "url": f"/static/uploads/products/{f}",
+                "url": f"/{upload_folder_url}/{f}",
                 "is_linked": is_linked,
                 "linked_to": linked_to
             })

@@ -17,10 +17,6 @@ from datetime import datetime, timezone
 
 main_bp = Blueprint('main', __name__)
 
-# Constants
-ADMIN_USER = 'admin' # Will be overridden by app config context if needed, but here we might need to access config.
-# Ideally, access config via current_app.config['APP_ADMIN_USER']
-
 @main_bp.route('/')
 def home():
     categories = Category.query.order_by(Category.name).all()
@@ -48,8 +44,8 @@ def home():
             })
 
     seo_metadata = {
-        'title': 'E-Commerce Pro - High Quality Products',
-        'description': 'Welcome to E-Commerce Pro, your one-stop shop for high-quality products delivered to your door.'
+        'title': current_app.config.get('SEO_METADATA_TITLE', 'E-Commerce Pro - High Quality Products'),
+        'description': current_app.config.get('SEO_METADATA_DESCRIPTION', 'Welcome to E-Commerce Pro, your one-stop shop for high-quality products delivered to your door.')
     }
     return render_template('index.html',
                            category_data=category_data,
@@ -296,12 +292,13 @@ def signup():
                     smtp_port = int(current_app.config.get('APP_SMTP_PORT', 587))
 
                     if sender_email and smtp_password:
-                        subject = "Welcome to E-Commerce Pro!"
+                        app_name = current_app.config.get('APP_NAME', 'E-Commerce Pro')
+                        subject = f"Welcome to {app_name}!"
                         body = f"""
                         <html>
                         <body>
                             <h1>Welcome, {new_user.username}!</h1>
-                            <p>Thank you for signing up with E-Commerce Pro.</p>
+                            <p>Thank you for signing up with {app_name}.</p>
                             <p>Please click the link below to validate your account:</p>
                             <a href="{validation_link}">{validation_link}</a>
                             <p>If you did not sign up for this account, please ignore this email.</p>
@@ -345,7 +342,6 @@ def validate_user():
 @main_bp.route("/list")                 #admin only
 @login_required
 def user_list():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.is_authenticated and current_user.username==admin_user:
         users = db.session.execute(db.select(User).order_by(User.username)).scalars()
@@ -356,7 +352,6 @@ def user_list():
 @main_bp.route("/user/<int:id>")
 @login_required
 def user_detail(id):
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.is_authenticated and current_user.username==admin_user or current_user.id==id:
         user = db.get_or_404(User, id)
@@ -367,7 +362,6 @@ def user_detail(id):
 @main_bp.route("/user/<int:id>/delete", methods=["GET", "POST"])
 @login_required
 def user_delete(id):
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.is_authenticated and (current_user.username==admin_user or current_user.id==id):
         user = db.get_or_404(User, id)
@@ -411,7 +405,6 @@ def export_static(subpath):
 @main_bp.route("/authorized_keys" , methods=['GET', 'POST'])
 @login_required
 def get_authorized_keys():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username == admin_user:
         return jsonify({'key': "_authorized_keys", '_url': request.remote_addr}), 200
@@ -422,7 +415,6 @@ def get_authorized_keys():
 @main_bp.route('/admin')
 @login_required
 def admin_page():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)
@@ -431,7 +423,6 @@ def admin_page():
 @main_bp.route('/admin/accounting')
 @login_required
 def admin_accounting():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)
@@ -441,7 +432,6 @@ def admin_accounting():
 @main_bp.route("/admin/orders/<string:public_order_id>")
 @login_required
 def admin_order_detail_by_public(public_order_id):
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)
@@ -451,7 +441,6 @@ def admin_order_detail_by_public(public_order_id):
 @main_bp.route("/admin/orders")
 @login_required
 def admin_orders():
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)
@@ -460,7 +449,6 @@ def admin_orders():
 @main_bp.route("/admin/orders/<int:order_id>")
 @login_required
 def admin_order_detail(order_id):
-    from flask import current_app
     admin_user = current_app.config.get('APP_ADMIN_USER')
     if current_user.username != admin_user:
         abort(403)

@@ -264,7 +264,8 @@ def setup_database(app):
             db.session.commit()
 
         if not GlobalSetting.query.filter_by(key='currency').first():
-            db.session.add(GlobalSetting(key='currency', value='€'))
+            default_currency = app.config.get('APP_DEFAULT_CURRENCY_SYMBOL', '€')
+            db.session.add(GlobalSetting(key='currency', value=default_currency))
             db.session.commit()
 
         if not Product.query.filter_by(product_sku='SAMPLE-SKU').first():
