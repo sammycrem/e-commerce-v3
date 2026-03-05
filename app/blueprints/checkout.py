@@ -10,11 +10,7 @@ from math import ceil
 import logging
 from flask import current_app
 
-logger = logging.getLogger(__name__)
-file_handler = logging.FileHandler('app.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+logger = logging.getLogger('app.' + __name__)
 
 checkout_bp = Blueprint('checkout_bp', __name__)
 
@@ -57,7 +53,7 @@ def create_payment_intent():
         stripe = get_stripe_client()
         intent = stripe.PaymentIntent.create(
             amount=total_amount,
-            currency='eur', # Adjust based on config/country if multi-currency supported
+            currency=current_app.config.get('APP_DEFAULT_CURRENCY', 'eur').lower(),
             automatic_payment_methods={
                 'enabled': True,
             },
@@ -530,11 +526,12 @@ def summary():
             if selected_payment == 'mollie':
                 try:
                     mollie_client = get_mollie_client()
-                    amount_eur = "{:.2f}".format(new_order.total_cents / 100)
+                    currency = current_app.config.get('APP_DEFAULT_CURRENCY', 'EUR').upper()
+                    amount_val = "{:.2f}".format(new_order.total_cents / 100)
                     payment = mollie_client.payments.create({
                         'amount': {
-                            'currency': 'EUR',
-                            'value': amount_eur
+                            'currency': currency,
+                            'value': amount_val
                         },
                         'description': f'Order {new_order.public_order_id}',
                         'redirectUrl': url_for('checkout_bp.mollie_return', order_id=new_order.public_order_id, _external=True),

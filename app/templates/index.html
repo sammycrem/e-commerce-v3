@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 
-{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else 'Welcome to E-Commerce Pro' }}{% endblock %}
+{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else 'Welcome to ' ~ app_name }}{% endblock %}
 
 {% block head %}
 {{ super() }}

@@ -24,13 +24,7 @@ import shutil
 from decimal import Decimal, ROUND_HALF_UP
 
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-file_handler = logging.FileHandler('util.log')
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+logger = logging.getLogger('app.' + __name__)
 
 def str_to_bool(string):
   """Converts a string to a boolean value.
@@ -1387,7 +1381,7 @@ def generate_invoice_pdf(order):
 
     # Fetch Company Details from GlobalSetting
     settings = {s.key: s.value for s in GlobalSetting.query.all()}
-    c_name = settings.get('company_name', 'E-Commerce Pro')
+    c_name = settings.get('company_name', current_app.config.get('APP_NAME', 'E-Commerce Pro'))
     c_address = settings.get('company_address', '')
     c_vat = settings.get('company_vat', '')
     c_email = settings.get('company_email', '')
@@ -1470,12 +1464,13 @@ def generate_invoice_pdf(order):
     pdf.ln()
 
     pdf.set_font("helvetica", "", 10)
+    currency = current_app.config.get('APP_DEFAULT_CURRENCY', 'EUR')
     for item in order.items:
         name = item.product_snapshot.get('name', 'Unknown')
         sku = item.variant_sku
-        price = f"{(item.unit_price_cents / 100):.2f} EUR"
+        price = f"{(item.unit_price_cents / 100):.2f} {currency}"
         qty = str(item.quantity)
-        total = f"{(item.unit_price_cents * item.quantity / 100):.2f} EUR"
+        total = f"{(item.unit_price_cents * item.quantity / 100):.2f} {currency}"
 
         pdf.cell(80, 7, name[:40], border=1)
         pdf.cell(30, 7, sku, border=1)
@@ -1488,20 +1483,20 @@ def generate_invoice_pdf(order):
     pdf.ln(5)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(155, 7, "Subtotal:", align='R')
-    pdf.cell(35, 7, f"{(order.subtotal_cents / 100):.2f} EUR", align='R')
+    pdf.cell(35, 7, f"{(order.subtotal_cents / 100):.2f} {currency}", align='R')
     pdf.ln()
     pdf.cell(155, 7, "Shipping:", align='R')
-    pdf.cell(35, 7, f"{(order.shipping_cost_cents / 100):.2f} EUR", align='R')
+    pdf.cell(35, 7, f"{(order.shipping_cost_cents / 100):.2f} {currency}", align='R')
     pdf.ln()
     pdf.cell(155, 7, "Discount:", align='R')
-    pdf.cell(35, 7, f"-{(order.discount_cents / 100):.2f} EUR", align='R')
+    pdf.cell(35, 7, f"-{(order.discount_cents / 100):.2f} {currency}", align='R')
     pdf.ln()
     pdf.cell(155, 7, "VAT:", align='R')
-    pdf.cell(35, 7, f"{(order.vat_cents / 100):.2f} EUR", align='R')
+    pdf.cell(35, 7, f"{(order.vat_cents / 100):.2f} {currency}", align='R')
     pdf.ln()
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(155, 10, "Total:", align='R')
-    pdf.cell(35, 10, f"{(order.total_cents / 100):.2f} EUR", align='R')
+    pdf.cell(35, 10, f"{(order.total_cents / 100):.2f} {currency}", align='R')
 
     return bytes(pdf.output())
 

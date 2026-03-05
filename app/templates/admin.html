@@ -39,6 +39,9 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link {{ 'active' if active_tab == 'settings' else '' }} tab-button" data-tab="settings" id="settings-tab" type="button">Settings</button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link tab-button" data-tab="logs" id="logs-tab" type="button">Logs</button>
+        </li>
     </ul>
 
     <!-- GALLERY TAB -->
@@ -360,6 +363,28 @@
                             <button id="delete-promo" class="btn btn-outline-danger ms-auto">Delete Promo</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGS TAB -->
+    <div id="tab-logs" class="tab-content d-none">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0">Server Logs</h2>
+                <div class="d-flex gap-2">
+                    <button id="btn-refresh-logs" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-sync-alt me-1"></i> Refresh
+                    </button>
+                    <button id="btn-clear-logs" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash-alt me-1"></i> Clear Logs
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="bg-dark text-light p-3 rounded overflow-auto" style="max-height: 600px; font-family: monospace; white-space: pre-wrap;" id="logs-container">
+                    Loading logs...
                 </div>
             </div>
         </div>
@@ -929,4 +954,5 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="{{ url_for('static', filename='js/admin_groups.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_gallery.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_settings.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_logs.js') }}" defer></script>
 {% endblock %}

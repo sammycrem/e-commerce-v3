@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else (sku ~ ' - ' ~ (product.name if product else 'Product') ~ ' | E-Commerce Pro') }}{% endblock %}
+{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else (sku ~ ' - ' ~ (product.name if product else 'Product') ~ ' | ' ~ app_name) }}{% endblock %}
 
 {% block meta_tags %}
 <meta name="description" content="{{ product.short_description if product and product.short_description else 'Product details' }}">
@@ -8,7 +8,7 @@
 
 {% block og_tags %}
 {% if product %}
-<meta property="og:title" content="{{ product.name }} | E-Commerce Pro">
+<meta property="og:title" content="{{ product.name }} | {{ app_name }}">
 <meta property="og:description" content="{{ product.short_description }}">
 <meta property="og:type" content="product">
 <meta property="og:url" content="{{ request.url }}">
@@ -424,7 +424,7 @@
   "sku": "{{ product.product_sku }}",
   "brand": {
     "@type": "Brand",
-    "name": "E-Commerce Pro"
+    "name": "{{ app_name }}"
   },
   "offers": {
     "@type": "Offer",
