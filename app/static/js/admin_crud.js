@@ -485,6 +485,9 @@
       const p = await res.json();
       $('#product_sku').value = p.product_sku;
       $('#name').value = p.name;
+      $('#slug').value = p.slug || '';
+      $('#meta_title').value = p.meta_title || '';
+      $('#meta_description').value = p.meta_description || '';
       const catSelect = $('#category');
       if (catSelect) {
         catSelect.dataset.pendingValue = p.category;
@@ -565,6 +568,9 @@
       const payload = {
         product_sku: pSku,
         name: $('#name').value.trim(),
+        slug: $('#slug').value.trim(),
+        meta_title: $('#meta_title').value.trim(),
+        meta_description: $('#meta_description').value.trim(),
         category: $('#category').value.trim(),
         message: $('#message').value.trim(),
         status: $('#status').value,
@@ -717,7 +723,7 @@
         showFeedback(data.message || 'Deleted', 'success');
         loadProducts();
         // reset editor if hard deleted or if soft deleted (to clear view)
-        ['product_sku', 'name', 'category', 'base_price', 'message', 'description', 'short_description', 'product_details', 'related_products', 'proposed_products', 'tag1', 'tag2', 'tag3', 'weight_grams', 'length', 'width', 'height'].forEach(id => $(`#${id}`).value = '');
+        ['product_sku', 'name', 'slug', 'meta_title', 'meta_description', 'category', 'base_price', 'message', 'description', 'short_description', 'product_details', 'related_products', 'proposed_products', 'tag1', 'tag2', 'tag3', 'weight_grams', 'length', 'width', 'height'].forEach(id => $(`#${id}`).value = '');
         imagesContainer.innerHTML = '';
         variantsContainer.innerHTML = '';
         saveBtn.dataset.editSku = '';
@@ -735,7 +741,7 @@
 
     // New product button
     if (newBtn) newBtn.addEventListener('click', () => {
-      ['product_sku', 'name', 'category', 'base_price', 'message', 'description', 'short_description', 'product_details', 'related_products', 'proposed_products', 'tag1', 'tag2', 'tag3', 'weight_grams', 'length', 'width', 'height'].forEach(id => $(`#${id}`).value = '');
+      ['product_sku', 'name', 'slug', 'meta_title', 'meta_description', 'category', 'base_price', 'message', 'description', 'short_description', 'product_details', 'related_products', 'proposed_products', 'tag1', 'tag2', 'tag3', 'weight_grams', 'length', 'width', 'height'].forEach(id => $(`#${id}`).value = '');
       $('#status').value = 'draft';
       imagesContainer.innerHTML = '';
       variantsContainer.innerHTML = '';

@@ -31,6 +31,9 @@
             <button class="nav-link {{ 'active' if active_tab == 'categories' else '' }} tab-button" data-tab="categories" id="categories-tab" type="button">Categories</button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link {{ 'active' if active_tab == 'groups' else '' }} tab-button" data-tab="groups" id="groups-tab" type="button">Groups</button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link {{ 'active' if active_tab == 'gallery' else '' }} tab-button" data-tab="gallery" id="gallery-tab" type="button">Gallery</button>
         </li>
         <li class="nav-item" role="presentation">
@@ -149,6 +152,10 @@
                                 <input id="base_price" type="text" placeholder="e.g. 24.99" class="form-control">
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label small fw-bold">Product SEO Slug</label>
+                                <input id="slug" type="text" placeholder="e.g. stylish-cotton-t-shirt" class="form-control">
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label small fw-bold">Message (Badge)</label>
                                 <input id="message" type="text" placeholder="e.g., New Arrival, Sale" class="form-control">
                             </div>
@@ -185,6 +192,18 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Proposed Products (SKUs, comma separated)</label>
                                 <input id="proposed_products" type="text" placeholder="SKU3, SKU4" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3 p-3 bg-light border rounded">
+                            <p class="small fw-bold mb-1">SEO Metadata</p>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Meta Title</label>
+                                <input id="meta_title" type="text" placeholder="SEO Title" class="form-control">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Meta Description</label>
+                                <textarea id="meta_description" class="form-control" rows="2" placeholder="SEO Description"></textarea>
                             </div>
                         </div>
 
@@ -482,9 +501,106 @@
                             <label class="form-label small fw-bold">Category Name</label>
                             <input id="cat_name" type="text" placeholder="e.g., Electronics" class="form-control">
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">SEO Slug</label>
+                            <input id="cat_slug" type="text" placeholder="e.g., electronics" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Meta Title</label>
+                            <input id="cat_meta_title" type="text" placeholder="Category Meta Title" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Meta Description</label>
+                            <textarea id="cat_meta_description" class="form-control" rows="2" placeholder="Category Meta Description"></textarea>
+                        </div>
                         <div class="d-flex gap-2 pt-3 border-top">
                             <button id="save-category" class="btn btn-primary px-4">Save Category</button>
                             <button id="delete-category" class="btn btn-outline-danger ms-auto">Delete Category</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GROUPS TAB -->
+    <div id="tab-groups" class="tab-content {{ 'd-none' if active_tab != 'groups' else '' }}">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0">Product Groups</h2>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="p-3 border-bottom">
+                            <button id="btn-new-group" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Create New Group
+                            </button>
+                        </div>
+                        <div id="group-list" class="list-group list-group-flush overflow-auto" style="max-height: 600px;">
+                            <!-- Groups will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white">
+                        <h2 class="h5 mb-0" id="group-editor-title">Manage Product Group</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Group Name</label>
+                                <input id="group_name" type="text" placeholder="e.g., Best Sellers" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">SEO Slug</label>
+                                <input id="group_slug" type="text" placeholder="e.g. best-sellers" class="form-control">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="group_active">
+                                    <label class="form-check-label fw-bold small" for="group_active">
+                                        Is Active
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Meta Title</label>
+                                <input id="group_meta_title" type="text" placeholder="Group Meta Title" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Meta Description</label>
+                                <textarea id="group_meta_description" class="form-control" rows="2" placeholder="Group Meta Description"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h3 class="h6 mb-3 fw-bold">Products in this Group</h3>
+                            <div class="input-group mb-3">
+                                <input type="text" id="group-add-sku" class="form-control" placeholder="Add Product by SKU">
+                                <button id="btn-group-add-sku" class="btn btn-outline-primary">Add</button>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Select from List</label>
+                                <select id="group-product-select" class="form-select">
+                                    <option value="">-- Choose Product --</option>
+                                    <!-- Products loaded here -->
+                                </select>
+                            </div>
+                            <div id="group-products-container" class="list-group">
+                                <!-- Group products list here -->
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 pt-3 border-top">
+                            <button id="save-group" class="btn btn-primary px-4">Save Group</button>
+                            <button id="delete-group" class="btn btn-outline-danger ms-auto">Delete Group</button>
                         </div>
                     </div>
                 </div>
@@ -777,6 +893,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <script src="{{ url_for('static', filename='js/admin_promo.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_countries.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_categories.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin_groups.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_gallery.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/admin_settings.js') }}" defer></script>
 {% endblock %}

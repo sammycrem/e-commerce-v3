@@ -84,7 +84,10 @@ def _create_product_internal(data):
     product = Product(
         product_sku=p_sku,
         name=data.get('name', 'Unknown'),
+        slug=data.get('slug'),
         description=data.get('description'),
+        meta_title=data.get('meta_title'),
+        meta_description=data.get('meta_description'),
         short_description=data.get('short_description'),
         product_details=data.get('product_details'),
         related_products=data.get('related_products'),
@@ -140,7 +143,10 @@ def _create_product_internal(data):
 
 def _update_product_internal(product, data):
     product.name = data.get('name', product.name)
+    product.slug = data.get('slug', product.slug)
     product.description = data.get('description', product.description)
+    product.meta_title = data.get('meta_title', product.meta_title)
+    product.meta_description = data.get('meta_description', product.meta_description)
     product.short_description = data.get('short_description', product.short_description)
     product.product_details = data.get('product_details', product.product_details)
     product.related_products = data.get('related_products', product.related_products)

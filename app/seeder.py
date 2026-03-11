@@ -1,6 +1,6 @@
 from .extensions import db
-from .models import User, Product, Variant, ProductImage, VariantImage, Promotion, Country, ShippingZone, Category, GlobalSetting, AppCurrency
-from .utils import encrypt_password, generate_id, ensure_icon_for_url
+from .models import User, Product, Variant, ProductImage, VariantImage, Promotion, Country, ShippingZone, Category, GlobalSetting, AppCurrency, ProductGroup
+from .utils import encrypt_password, generate_id, ensure_icon_for_url, slugify
 from werkzeug.security import generate_password_hash
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -114,6 +114,7 @@ def create_product_data(product_key, category=None, name=None):
     return {
         "product_sku": sku,
         "name": name,
+        "slug": slugify(name),
         "category": category,
         "description": description,
         "short_description": f"Short desc for {sku}",
@@ -142,6 +143,7 @@ def insert_product(session, pdata):
     product = Product(
         product_sku=sku,
         name=pdata["name"],
+        slug=pdata.get("slug"),
         description=pdata.get("description"),
         short_description=pdata.get("short_description"),
         product_details=pdata.get("product_details"),
@@ -260,9 +262,9 @@ def setup_database(app):
         # Seed categories logic updated below in the product loop
         if not Category.query.first():
             db.session.add_all([
-                Category(name='Graphic Tees'),
-                Category(name='Accessories'),
-                Category(name='Apparel')
+                Category(name='Graphic Tees', slug='graphic-tees'),
+                Category(name='Accessories', slug='accessories'),
+                Category(name='Apparel', slug='apparel')
             ])
             db.session.commit()
 
@@ -283,6 +285,7 @@ def setup_database(app):
             product = Product(
                 product_sku='SAMPLE-SKU',
                 name='Sample Product',
+                slug='sample-product',
                 description='This is a sample product.',
                 category='Samples',
                 base_price_cents=12345
@@ -314,7 +317,7 @@ def setup_database(app):
 
                 # Ensure category exists
                 if not Category.query.filter_by(name=cat_name).first():
-                    db.session.add(Category(name=cat_name))
+                    db.session.add(Category(name=cat_name, slug=slugify(cat_name)))
                     db.session.commit()
 
                 # Create PRODUCT_COUNT products for EACH category
@@ -333,6 +336,19 @@ def setup_database(app):
                     created.append(prod.product_sku)
 
                 db.session.commit()
+
+            if not ProductGroup.query.first():
+                featured = ProductGroup(name='Featured Collection', slug='featured-collection', is_active=True)
+                best_sellers = ProductGroup(name='Best Sellers', slug='best-sellers', is_active=True)
+                db.session.add_all([featured, best_sellers])
+                db.session.commit()
+
+                # Add some products to groups
+                all_prods = Product.query.filter_by(status='published').limit(12).all()
+                featured.products = all_prods[:8]
+                best_sellers.products = all_prods[4:12]
+                db.session.commit()
+
         except Exception as exc:
             db.session.rollback()
             logger.error(f"Error during seeding: {exc}")

@@ -24,6 +24,9 @@
     const delBtn = $('#delete-category');
     const newBtn = $('#btn-new-category');
     const catNameInput = $('#cat_name');
+    const catSlugInput = $('#cat_slug');
+    const catMetaTitleInput = $('#cat_meta_title');
+    const catMetaDescriptionInput = $('#cat_meta_description');
     const editorTitle = $('#category-editor-title');
 
     if (!categoryList) return;
@@ -39,6 +42,9 @@
         }, cat.name);
         item.onclick = () => {
           catNameInput.value = cat.name;
+          catSlugInput.value = cat.slug || '';
+          catMetaTitleInput.value = cat.meta_title || '';
+          catMetaDescriptionInput.value = cat.meta_description || '';
           saveBtn.dataset.id = cat.id;
           editorTitle.textContent = 'Edit Category: ' + cat.name;
         };
@@ -53,12 +59,18 @@
 
     newBtn.onclick = () => {
       catNameInput.value = '';
+      catSlugInput.value = '';
+      catMetaTitleInput.value = '';
+      catMetaDescriptionInput.value = '';
       delete saveBtn.dataset.id;
       editorTitle.textContent = 'Add New Category';
     };
 
     saveBtn.onclick = async () => {
       const name = catNameInput.value.trim();
+      const slug = catSlugInput.value.trim();
+      const meta_title = catMetaTitleInput.value.trim();
+      const meta_description = catMetaDescriptionInput.value.trim();
       if (!name) return alert('Category name is required');
 
       const id = saveBtn.dataset.id;
@@ -72,7 +84,12 @@
       const res = await fetch(url, {
         method,
         headers,
-        body: JSON.stringify({ name })
+        body: JSON.stringify({
+            name,
+            slug,
+            meta_title,
+            meta_description
+        })
       });
 
       if (res.ok) {

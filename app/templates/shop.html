@@ -1,12 +1,32 @@
 {% extends "layout.html" %}
 
-{% block title %}Shop - Our Products{% endblock %}
+{% block title %}{{ seo_metadata.title if seo_metadata and seo_metadata.title else 'Shop - Our Products' }}{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "itemListElement": [
+    {% for product in products %}
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index }},
+      "url": "{{ url_for('main.product_page', sku=product.product_sku, _external=True) }}",
+      "name": "{{ product.name }}"
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="bg-light py-5 mb-5 border-bottom">
     <div class="container text-center">
-        <h1 class="display-4 fw-bold">Shop</h1>
-        <p class="lead text-muted">Explore our exclusive collection of high-quality products.</p>
+        <h1 class="display-4 fw-bold">{{ seo_metadata.heading if seo_metadata and seo_metadata.heading else 'Shop' }}</h1>
+        <p class="lead text-muted">{{ seo_metadata.description if seo_metadata and seo_metadata.description else 'Explore our exclusive collection of high-quality products.' }}</p>
     </div>
 </div>
 

@@ -19,10 +19,11 @@ window.addEventListener('DOMContentLoaded', async () => {
           const res = await fetch('/api/categories');
           const categories = await res.json();
           categories.forEach(c => {
+              const val = c.slug || c.name;
               // Avoid duplicates if Jinja2 partially populated or something
-              if (![...categorySelect.options].some(opt => opt.value === c.name)) {
+              if (![...categorySelect.options].some(opt => opt.value === val)) {
                   const opt = document.createElement('option');
-                  opt.value = c.name;
+                  opt.value = val;
                   opt.textContent = c.name;
                   categorySelect.appendChild(opt);
               }
@@ -32,34 +33,79 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
   }
 
-  // Check URL params for initial state
+  // Check URL params and path for initial state
   const urlParams = new URLSearchParams(window.location.search);
-  const initialCategory = urlParams.get('category');
+  let initialCategory = urlParams.get('category');
+  let initialGroupId = urlParams.get('group_id');
   const initialQ = urlParams.get('q');
 
-  if (initialCategory && categorySelect) {
-      categorySelect.value = initialCategory;
+  const path = window.location.pathname;
+  if (path.includes('/shop/category/')) {
+      initialCategory = decodeURIComponent(path.split('/shop/category/')[1]);
+  } else if (path.includes('/shop/group/')) {
+      initialGroupId = decodeURIComponent(path.split('/shop/group/')[1]);
+  }
+
+  if (categorySelect) {
+      if (initialGroupId) {
+          categorySelect.value = `group:${initialGroupId}`;
+      } else if (initialCategory) {
+          categorySelect.value = initialCategory;
+      }
   }
   if (initialQ && searchInput) {
       searchInput.value = initialQ;
   }
 
-  async function loadProducts(filters = {}) {
-      if (!grid) return;
-      grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+  // Simple in-memory cache for product queries
+  const productsCache = new Map();
 
-      const params = new URLSearchParams({ per_page: 100 });
-      if (filters.category) params.append('category', filters.category);
+  async function loadProducts(filters = {}) {
+      if (!grid) return 0;
+
+      const perPage = filters.per_page || 100;
+      const params = new URLSearchParams({ per_page: perPage });
+
+      if (filters.category) {
+          if (filters.category.startsWith('group:')) {
+              const val = filters.category.split(':')[1];
+              if (isNaN(val)) params.append('group_slug', val);
+              else params.append('group_id', val);
+          } else {
+              params.append('category', filters.category);
+          }
+      } else if (filters.group_id) {
+          if (isNaN(filters.group_id)) params.append('group_slug', filters.group_id);
+          else params.append('group_id', filters.group_id);
+      }
+
       if (filters.q) params.append('q', filters.q);
 
+      const cacheKey = params.toString();
+      if (productsCache.has(cacheKey)) {
+          const cachedData = productsCache.get(cacheKey);
+          renderProducts(cachedData.products);
+          return cachedData.products.length;
+      }
+
+      // Only show spinner if not already present and not in cache
+      if (!grid.querySelector('.spinner-border')) {
+          grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>';
+      }
       try {
         const res = await fetch(`/api/products?${params.toString()}`, { credentials: 'same-origin' });
         const data = await res.json();
         const products = data.products || [];
+
+        // Cache the results
+        productsCache.set(cacheKey, { products, timestamp: Date.now() });
+
         renderProducts(products);
+        return products.length;
       } catch (err) {
         console.error(err);
         grid.innerHTML = '<div class="col-12 text-center py-5"><h3>Error loading products</h3><p>Please try again later.</p></div>';
+        return 0;
       }
   }
 
@@ -119,11 +165,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       return stars;
   }
 
-  // Initial Load
-  if (grid) {
-      loadProducts({ category: initialCategory, q: initialQ });
-  }
-
   // Search Handler
   if (searchForm) {
       searchForm.addEventListener('submit', (e) => {
@@ -140,13 +181,59 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Auto-filter on category select
   if (categorySelect) {
       categorySelect.addEventListener('change', () => {
-          const category = categorySelect.value;
+          const val = categorySelect.value;
           const q = searchInput ? searchInput.value.trim() : '';
-          if (grid) {
-              loadProducts({ category, q });
+
+          // For SEO and consistency, we redirect to the landing page of the category/group
+          // except if we are already on a shop page and just want to filter (though redirection is still fine)
+          // We'll redirect if q is present anyway to show results
+
+          let url = '';
+          if (val.startsWith('group:')) {
+              const groupSlug = val.split(':')[1];
+              url = `/shop/group/${encodeURIComponent(groupSlug)}`;
+          } else if (val) {
+              url = `/shop/category/${encodeURIComponent(val)}`;
           } else {
-              window.location.href = `/shop?category=${encodeURIComponent(category)}&q=${encodeURIComponent(q)}`;
+              url = '/shop';
           }
+
+          if (q) {
+              url += (url.includes('?') ? '&' : '?') + `q=${encodeURIComponent(q)}`;
+          }
+          window.location.href = url;
       });
+  }
+
+  // Initial Load
+  if (grid) {
+      const isHomePage = window.location.pathname === '/' || window.location.pathname === '/index';
+      const noFilters = !initialCategory && !initialGroupId && !initialQ;
+
+      // Skip initial AJAX load if products are already server-rendered (prevents double-load flicker)
+      if (grid.querySelector('.product-card')) {
+          return;
+      }
+
+      if (isHomePage && noFilters) {
+          // Home page default behavior: Performance first, curated SEO content
+          // Try loading featured collection (curated), fallback to all products if empty.
+          loadProducts({ group_id: 'featured-collection', per_page: 8 }).then(count => {
+              const heading = document.querySelector('#featured-products h2');
+              if (count === 0) {
+                  // Fallback to all products (legacy behavior)
+                  loadProducts({ per_page: 8 });
+                  if (heading) heading.textContent = 'Our Collection';
+              } else {
+                  if (heading) heading.textContent = 'Featured Collection';
+              }
+          });
+      } else {
+          loadProducts({
+              category: initialCategory,
+              group_id: initialGroupId,
+              q: initialQ
+          });
+      }
   }
 });
