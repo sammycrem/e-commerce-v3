@@ -106,16 +106,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         </td>
         <td>
             <div class="quantity-selector">
-                <button class="minus-btn" type="button">-</button>
+                <button class="minus-btn" type="button" aria-label="Decrease quantity">-</button>
                 <input type="text" value="${item.quantity}" readonly style="width: 40px; text-align: center; border: none; background: transparent;">
-                <button class="plus-btn" type="button">+</button>
+                <button class="plus-btn" type="button" aria-label="Increase quantity">+</button>
             </div>
         </td>
         <td>
             <div class="fw-bold product-price" data-base-price-cents="${item.unit_price_cents * item.quantity}">${formatPrice(item.unit_price_cents * item.quantity)}</div>
         </td>
         <td>
-            <button class="btn btn-sm btn-outline-danger delete-item-btn" type="button">
+            <button class="btn btn-sm btn-outline-danger delete-item-btn" type="button" aria-label="Remove item from cart">
                 <i class="bi bi-trash"></i>
             </button>
         </td>

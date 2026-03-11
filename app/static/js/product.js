@@ -119,9 +119,9 @@
             <div class="d-flex flex-column align-items-center gap-1" style="flex-grow: 1;">
                <div class="size-badge-cart bg-danger text-white fw-bold d-flex align-items-center justify-content-center mb-1" style="width: 100%; height: 28px; border-radius: 4px; font-size: 1.1rem;">${item.size || ''}</div>
                <div class="qty-box">
-                 <button type="button" class="minus">-</button>
+                 <button type="button" class="minus" aria-label="Decrease quantity">-</button>
                  <span class="qty-val">${item.quantity}</span>
-                 <button type="button" class="plus">+</button>
+                 <button type="button" class="plus" aria-label="Increase quantity">+</button>
                </div>
                <div class="sidebar-price mt-1 product-price" data-base-price-cents="${item.unit_price_cents}">${formatPrice(item.unit_price_cents)}</div>
             </div>
@@ -484,6 +484,11 @@
     }
     const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
     const payload = { sku: selectedVariant.sku, quantity: qty };
+
+    const originalText = addToCartBtn.innerHTML;
+    addToCartBtn.disabled = true;
+    addToCartBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Adding...';
+
     try {
       const res = await fetch('/api/cart', {
         method: 'POST',
@@ -497,14 +502,21 @@
       const data = await res.json();
       if (!res.ok) {
         await alert(data.error || 'Failed to add to cart');
+        addToCartBtn.innerHTML = originalText;
+        addToCartBtn.disabled = false;
       } else {
         addToCartBtn.textContent = 'Added ✓';
-        setTimeout(() => addToCartBtn.textContent = 'Add to cart', 1500);
+        setTimeout(() => {
+            addToCartBtn.innerHTML = originalText;
+            addToCartBtn.disabled = false;
+        }, 1500);
         await refreshCartSidebar();
       }
     } catch (err) {
       console.error(err);
       await alert('Network error when adding to cart');
+      addToCartBtn.innerHTML = originalText;
+      addToCartBtn.disabled = false;
     }
   }
 
