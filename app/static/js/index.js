@@ -17,7 +17,45 @@ function getIconUrl(url) {
   return base + '_icon.webp';
 }
 
+function handlePreloadSections() {
+  const sections = document.querySelectorAll('.preload-section');
+  sections.forEach(section => {
+    const images = Array.from(section.querySelectorAll('img'));
+    let loadedCount = 0;
+    const totalImages = images.length;
+
+    function checkComplete() {
+      loadedCount++;
+      if (loadedCount >= totalImages) {
+        section.classList.add('loaded');
+      }
+    }
+
+    if (totalImages === 0) {
+      section.classList.add('loaded');
+    } else {
+      images.forEach(img => {
+        if (img.complete) {
+          checkComplete();
+        } else {
+          img.addEventListener('load', checkComplete);
+          img.addEventListener('error', checkComplete);
+        }
+      });
+    }
+
+    // Fallback timeout to ensure visibility even if images fail to trigger load/error
+    setTimeout(() => {
+      if (!section.classList.contains('loaded')) {
+        section.classList.add('loaded');
+      }
+    }, 1500); // 1.5 seconds fallback
+  });
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
+  handlePreloadSections();
+
   const grid = document.getElementById('product-grid');
   const searchForm = document.getElementById('product-search-form');
   const categorySelect = document.getElementById('search-category');

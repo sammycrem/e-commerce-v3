@@ -10,6 +10,21 @@
     .carousel-item {
     transition: transform .4s ease-in-out !important;
     }
+
+    #categoryCarousel .carousel-indicators button {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        opacity: 0.5;
+        border: none;
+        margin: 0 4px;
+    }
+    #categoryCarousel .carousel-indicators button.active {
+        opacity: 1;
+        background-color: #000252;
+    }
+
     .carousel-css{
         background: #ffbce0;
         border-radius: 10px;
@@ -226,18 +241,23 @@
         <!-- Middle Column (Carousel 50% on desktop) -->
         <div class="col-lg-6 col-12 order-1 order-lg-2">
             <div id="categoryCarousel" class="carousel slide carousel-css" data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                    {% for item in category_data %}
+                    <button type="button" data-bs-target="#categoryCarousel" data-bs-slide-to="{{ loop.index0 }}" {% if loop.first %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ loop.index }}"></button>
+                    {% endfor %}
+                </div>
                 <div class="carousel-inner">
                     {% for item in category_data %}
                     <div class="carousel-item {% if loop.first %}active{% endif %}">
                         <div class="carousel-container shadow-sm">
-                            <!-- If even index, text on left. If odd, text on right (reversed) -->
-                            <div class="carousel-item-custom {% if loop.index0 % 2 != 0 %}flex-row-reverse{% endif %}">
+                            {% if loop.index0 % 2 == 0 %}
+                            <!-- Odd slide (index 0, 2, 4...) -> Text on left, 2 images on right -->
+                            <div class="carousel-item-custom">
                                 <div class="banner-text-side">
                                     <h2 class="display-6 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
                                     <a href="{{ url_for('main.shop_page', slug=item.category.slug) }}" class="btn-shop-now bg-primary">Shop Now</a>
                                 </div>
                                 <div class="banner-image-side">
-                                    {# Limit to 2 products for the banner display #}
                                     {% for prod in item.products[:2] %}
                                         {% if prod.images %}
                                             <img src="{{ prod.images[0].url | big_url }}" alt="{{ prod.name }}">
@@ -247,6 +267,36 @@
                                     {% endfor %}
                                 </div>
                             </div>
+                            {% else %}
+                            <!-- Even slide (index 1, 3, 5...) -> Image 1 left, Text middle, Image 2 right -->
+                            <div class="carousel-item-custom slide-even">
+                                {% set products = item.products[:2] %}
+                                {% if products|length >= 1 %}
+                                <div class="banner-image-side-single">
+                                    {% if products[0].images %}
+                                        <img src="{{ products[0].images[0].url | big_url }}" alt="{{ products[0].name }}">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='img/placeholder.webp') }}" alt="Placeholder">
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                <div class="banner-text-side-middle text-center">
+                                    <h2 class="display-6 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
+                                    <a href="{{ url_for('main.shop_page', slug=item.category.slug) }}" class="btn-shop-now bg-primary mx-auto">Shop Now</a>
+                                </div>
+
+                                {% if products|length == 2 %}
+                                <div class="banner-image-side-single right-img">
+                                    {% if products[1].images %}
+                                        <img src="{{ products[1].images[0].url | big_url }}" alt="{{ products[1].name }}">
+                                    {% else %}
+                                        <img src="{{ url_for('static', filename='img/placeholder.webp') }}" alt="Placeholder">
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -277,7 +327,7 @@
 <div class="container py-4" id="product-grid">
     <!-- Category Grid Sections -->
     {% for item in category_data %}
-    <div class="category-section mb-5">
+    <div class="category-section mb-5 preload-section">
         <div class="mb-4">
             <h2 class="fw-bold d-inline-block me-3 mb-0">{{ item.category.name }}</h2>
             <a href="{{ url_for('main.shop_page', slug=item.category.slug) }}" class="btn btn-link text-primary fw-bold text-decoration-none p-0 align-baseline">
