@@ -13,3 +13,5 @@ util.log
 flask_session/
 encrypt_config_file.txt
 shop.db
+*.db-shm
+*.db-wal

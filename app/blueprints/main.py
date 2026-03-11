@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, abort, send_from_directory, request, jsonify, redirect, url_for, session, current_app, flash
+from collections import defaultdict
 from flask_login import current_user, login_required, logout_user, login_user
-from ..models import User, Product, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
+from ..models import User, Product, Variant, Promotion, Country, GlobalSetting, AppCurrency, Order, Category, Review, OrderItem
 from ..extensions import db, limiter, cache
 from sqlalchemy.orm import joinedload
 from sqlalchemy import func
@@ -13,62 +14,35 @@ from datetime import datetime, timezone
 
 main_bp = Blueprint('main', __name__)
 
-@main_bp.app_template_filter('icon_url')
-def icon_url(url):
-    if not url:
-        return ""
-    base, _ = os.path.splitext(url)
-    return f"{base}_icon.webp"
-
-@main_bp.app_template_filter('big_url')
-def big_url(url):
-    if not url:
-        return ""
-    base, _ = os.path.splitext(url)
-    if base.endswith("_big"):
-        return url
-    return f"{base}_big.webp"
-
 # Constants
 ADMIN_USER = 'admin' # Will be overridden by app config context if needed, but here we might need to access config.
 # Ideally, access config via current_app.config['APP_ADMIN_USER']
 
 @main_bp.route('/')
 def home():
-    categories = Category.query.all()
-    # Fetch all published products with images to avoid N+1 query issues
-    all_published_products = Product.query.filter_by(status='published').options(joinedload(Product.images)).all()
+    categories = Category.query.order_by(Category.name).all()
+    # Fetch all published products with images and variants to avoid N+1 query issues
+    # Order by ID desc to show latest products
+    all_published_products = Product.query.filter_by(status='published').options(
+        joinedload(Product.images),
+        joinedload(Product.variants).joinedload(Variant.images)
+    ).order_by(Product.id.desc()).all()
 
     # Group products by category in memory
-    from collections import defaultdict
     products_by_category = defaultdict(list)
     for prod in all_published_products:
         products_by_category[prod.category].append(prod)
 
     category_data = []
-    import random
     for cat in categories:
         cat_products = products_by_category.get(cat.name, [])
         if cat_products:
-            # Select 2 random products per category if available
-            selected_products = random.sample(cat_products, min(len(cat_products), 2))
+            # Select up to 5 latest products per category
+            selected_products = cat_products[:5]
             category_data.append({
                 'category': cat,
                 'products': selected_products
             })
-    # Fetch featured products for the main grid
-    from ..models import ProductGroup
-    featured_group = ProductGroup.query.filter_by(slug='featured-collection', is_active=True).first()
-    featured_products = []
-    heading = 'Our Collection'
-    if featured_group:
-        featured_products = featured_group.products[:8]
-        heading = 'Featured Collection'
-
-    # Fallback to general products if no featured group or empty
-    if not featured_products:
-        featured_products = [p for p in all_published_products[:8]]
-        heading = 'Our Collection'
 
     seo_metadata = {
         'title': 'E-Commerce Pro - High Quality Products',
@@ -76,8 +50,6 @@ def home():
     }
     return render_template('index.html',
                            category_data=category_data,
-                           featured_products=featured_products,
-                           heading=heading,
                            seo_metadata=seo_metadata)
 
 @main_bp.route('/index')
@@ -219,11 +191,10 @@ def product_page(sku):
     if product and current_user.is_authenticated:
         user_review = Review.query.filter_by(user_id=current_user.id, product_id=product.id).first()
 
-        # Check if user has ordered this product via variant SKUs
-        variant_skus = [v.sku for v in product.variants]
-        has_ordered = db.session.query(OrderItem).join(Order).filter(
+        # Check if user has ordered this product
+        has_ordered = db.session.query(OrderItem).join(Order).join(Variant, OrderItem.variant_sku == Variant.sku).filter(
             Order.user_id == current_user.id,
-            OrderItem.variant_sku.in_(variant_skus)
+            Variant.product_id == product.id
         ).count() > 0
 
     return render_template('product_detail.html', sku=sku, product=product, user_review=user_review, has_ordered=has_ordered, seo_metadata=seo_metadata)

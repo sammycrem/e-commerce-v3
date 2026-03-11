@@ -19,7 +19,7 @@
 
   function $(sel, root = document) { return root.querySelector(sel); }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const promoList = $('#promo-list');
     const userSelect = $('#promo_user_id');
     const saveBtn = $('#save-promo');
@@ -29,7 +29,7 @@
 
     if (!promoList) return;
 
-    function showFeedback(msg, type = 'info') {
+    async function showFeedback(msg, type = 'info') {
       if (feedback) {
         feedback.style.display = 'block';
         feedback.className = `alert alert-dismissible fade show mb-0 ${type === 'error' ? 'alert-danger' : 'alert-success'}`;
@@ -39,7 +39,7 @@
           feedback.classList.add('d-none');
         }, 5000);
       } else {
-        alert(msg);
+        await alert(msg);
       }
     }
 
@@ -76,34 +76,22 @@
             el('small', {}, `${p.discount_type}: ${p.discount_type === 'FIXED' ? (p.discount_value / 100).toFixed(2) : p.discount_value}${p.discount_type === 'PERCENT' ? '%' : window.appConfig.currencySymbol}`),
             p.username ? el('div', { class: 'small text-primary' }, `User: ${p.username}`) : null
           );
-          item.addEventListener('click', () => loadPromoDetails(p));
+          item.addEventListener('click', () => {
+            $('#promo_code').value = p.code;
+            $('#promo_type').value = p.discount_type;
+            $('#promo_value').value = p.discount_type === 'FIXED' ? (p.discount_value / 100).toFixed(2) : p.discount_value;
+            $('#promo_description').value = p.description || '';
+            $('#promo_active').checked = p.is_active;
+            $('#promo_valid_to').value = p.valid_to ? p.valid_to.substring(0, 16) : '';
+            $('#promo_user_id').value = p.user_id || '';
+            saveBtn.dataset.editId = p.id;
+            $('#promo-editor-title').textContent = 'Edit Promo Code: ' + p.code;
+          });
           promoList.appendChild(item);
         });
       } catch (err) {
         console.error(err);
       }
-    }
-
-    function loadPromoDetails(p) {
-      $('#promo_code').value = p.code;
-      $('#promo_type').value = p.discount_type;
-      $('#promo_value').value = p.discount_type === 'FIXED' ? (p.discount_value / 100).toFixed(2) : p.discount_value;
-      $('#promo_description').value = p.description || '';
-      $('#promo_active').checked = p.is_active;
-      $('#promo_user_id').value = p.user_id || '';
-
-      if (p.valid_to) {
-        // format ISO to datetime-local compatible string
-        const d = new Date(p.valid_to);
-        const pad = (n) => n.toString().padStart(2, '0');
-        const formatted = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        $('#promo_valid_to').value = formatted;
-      } else {
-        $('#promo_valid_to').value = '';
-      }
-
-      saveBtn.dataset.editId = p.id;
-      $('#promo-editor-title').textContent = 'Edit Promo Code: ' + p.code;
     }
 
     saveBtn.addEventListener('click', async () => {
@@ -141,12 +129,12 @@
 
         const res = await fetch(url, {
           method,
-          headers: headers,
+          headers,
           body: JSON.stringify(payload)
         });
         if (res.ok) {
           showFeedback('Promotion saved successfully');
-          loadPromos();
+          await loadPromos();
           if (!editId) resetForm();
         } else {
           const data = await res.json();
@@ -160,7 +148,7 @@
     deleteBtn.addEventListener('click', async () => {
       const editId = saveBtn.dataset.editId;
       if (!editId) return;
-      if (!confirm('Are you sure you want to delete this promo code?')) return;
+      if (!await confirm('Are you sure you want to delete this promo code?')) return;
 
       try {
         const headers = {};
@@ -174,7 +162,7 @@
         if (res.ok) {
           showFeedback('Promotion deleted');
           resetForm();
-          loadPromos();
+          await loadPromos();
         } else {
           showFeedback('Failed to delete', 'error');
         }
@@ -197,7 +185,7 @@
       $('#promo-editor-title').textContent = 'Create / Edit Promo Code';
     }
 
-    loadUsers();
-    loadPromos();
+    await loadUsers();
+    await loadPromos();
   });
 })();

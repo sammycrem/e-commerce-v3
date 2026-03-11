@@ -37,9 +37,9 @@
             <div class="card h-100 shadow-sm border-0 product-card overflow-hidden" style="border-radius: 0;">
                 <a href="{{ url_for('main.product_page', sku=product.product_sku) }}" class="product-image-container d-block position-relative">
                     {% if product.images %}
-                        <img src="{{ product.images[0].url | big_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                        <img src="{{ product.images[0].url | big_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;" loading="lazy">
                     {% else %}
-                        <img src="{{ url_for('static', filename='img/placeholder.webp') }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                        <img src="{{ url_for('static', filename='img/placeholder.webp') }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;" loading="lazy">
                     {% endif %}
                     <div class="product-overlay d-flex align-items-center justify-content-center opacity-0 transition">
                         <span class="btn btn-primary shadow">View Details</span>

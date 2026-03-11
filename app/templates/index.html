@@ -234,10 +234,11 @@
                             <div class="carousel-item-custom {% if loop.index0 % 2 != 0 %}flex-row-reverse{% endif %}">
                                 <div class="banner-text-side">
                                     <h2 class="display-6 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
-                                    <a href="{{ url_for('main.shop_page', category=item.category.name) }}" class="btn-shop-now bg-primary">Shop Now</a>
+                                    <a href="{{ url_for('main.shop_page', slug=item.category.slug) }}" class="btn-shop-now bg-primary">Shop Now</a>
                                 </div>
                                 <div class="banner-image-side">
-                                    {% for prod in item.products %}
+                                    {# Limit to 2 products for the banner display #}
+                                    {% for prod in item.products[:2] %}
                                         {% if prod.images %}
                                             <img src="{{ prod.images[0].url | big_url }}" alt="{{ prod.name }}">
                                         {% else %}
@@ -273,25 +274,26 @@
     </div>
 </div>
 
-<div class="container py-4">
-    <!-- Featured Section -->
-    <div id="featured-products" class="mb-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold mb-0">{{ heading }}</h2>
-            <a href="{{ url_for('main.shop_page') }}" class="btn btn-link text-primary fw-bold text-decoration-none p-0">
+<div class="container py-4" id="product-grid">
+    <!-- Category Grid Sections -->
+    {% for item in category_data %}
+    <div class="category-section mb-5">
+        <div class="mb-4">
+            <h2 class="fw-bold d-inline-block me-3 mb-0">{{ item.category.name }}</h2>
+            <a href="{{ url_for('main.shop_page', slug=item.category.slug) }}" class="btn btn-link text-primary fw-bold text-decoration-none p-0 align-baseline">
                 View All <i class="bi bi-chevron-right ms-1"></i>
             </a>
         </div>
 
-        <div id="product-grid" class="row g-4">
-            {% for product in featured_products %}
+        <div class="row g-4">
+            {% for product in item.products %}
             <div class="col-sm-6 col-md-4 col-lg-3 wide-20">
                 <div class="card h-100 shadow-sm border-0 product-card overflow-hidden" style="border-radius: 0;">
                     <a href="{{ url_for('main.product_page', sku=product.product_sku) }}" class="product-image-container d-block position-relative">
                         {% if product.images %}
-                            <img src="{{ product.images[0].url | big_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                            <img src="{{ product.images[0].url | big_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;" loading="lazy">
                         {% else %}
-                            <img src="{{ url_for('static', filename='img/placeholder.webp') }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                            <img src="{{ url_for('static', filename='img/placeholder.webp') }}" class="card-img-top" alt="{{ product.name }}" style="height: 350px; object-fit: cover; border-radius: 0;" loading="lazy">
                         {% endif %}
                         <div class="product-overlay d-flex align-items-center justify-content-center opacity-0 transition">
                             <span class="btn btn-primary shadow">View Details</span>
@@ -313,16 +315,17 @@
                     </div>
                 </div>
             </div>
-            {% else %}
-            <div class="col-12 text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading products...</span>
-                </div>
-                <p class="mt-2 text-muted">Discovering our best products for you...</p>
-            </div>
             {% endfor %}
         </div>
     </div>
+    {% else %}
+    <div class="col-12 text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading products...</span>
+        </div>
+        <p class="mt-2 text-muted">Discovering our best products for you...</p>
+    </div>
+    {% endfor %}
 </div>
 
 <!-- Newsletter -->

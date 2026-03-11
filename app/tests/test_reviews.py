@@ -1,20 +1,20 @@
 import pytest
 from app.app import create_app, db
-from app.models import Product, User, Review
+from app.models import Product, User, Review, Order, OrderItem, Variant
 from werkzeug.security import generate_password_hash
 import os
 
 @pytest.fixture
 def app():
     test_config = {
-        "TESTING": True,
+        "TESTING": True, "RATELIMIT_ENABLED": False,
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "CACHE_TYPE": "NullCache",
         "WTF_CSRF_ENABLED": False,
         "APP_ADMIN_USER": "admin",
         "APP_SECRET_KEY": "test",
         "APP_SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "APP_SESSION_TYPE": "filesystem",
+        "APP_SESSION_TYPE": None,
         "APP_SESSION_PERMANENT": "False",
         "APP_PERMANENT_SESSION_LIFETIME": "3600",
         "APP_ADMIN_EMAIL": "admin@example.com",
@@ -42,9 +42,23 @@ def app():
             product_sku='TEST-SKU',
             name='Test Product',
             base_price_cents=1000,
-            is_active=True
+            is_active=True,
+            status='published'
         )
         db.session.add(p)
+        db.session.flush()
+
+        v = Variant(sku='TEST-SKU-V1', product_id=p.id, stock_quantity=10)
+        db.session.add(v)
+        db.session.flush()
+
+        # Create Order for user to allow reviews
+        order = Order(user_id=user.id, status='PAID', total_cents=1000)
+        db.session.add(order)
+        db.session.flush()
+
+        oi = OrderItem(order_id=order.id, variant_sku=v.sku, quantity=1, unit_price_cents=1000, product_snapshot={})
+        db.session.add(oi)
         db.session.commit()
 
     yield app

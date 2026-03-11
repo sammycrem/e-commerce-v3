@@ -1,6 +1,6 @@
 import pytest
 from app.app import create_app, db
-from app.models import Product, User, Review
+from app.models import Product, User, Review, Order, OrderItem, Variant
 from werkzeug.security import generate_password_hash
 import os
 
@@ -28,8 +28,24 @@ def app():
         db.create_all()
         user = User(username='u', email='u@e.com', user_id='uid', password=generate_password_hash('p'), encrypted_password='e')
         db.session.add(user)
-        p = Product(product_sku='P-1', name='Prod 1', base_price_cents=100, is_active=True)
+        db.session.flush()
+
+        p = Product(product_sku='P-1', name='Prod 1', base_price_cents=100, is_active=True, status='published')
         db.session.add(p)
+        db.session.flush()
+
+        v = Variant(product_id=p.id, sku='P-1-VAR', stock_quantity=10, price_modifier_cents=0)
+        db.session.add(v)
+        db.session.flush()
+
+        # Add order for user so they can see the review form
+        o = Order(public_order_id='ORD-1', user_id=user.id, status='PAID', total_cents=100)
+        db.session.add(o)
+        db.session.flush()
+
+        oi = OrderItem(order_id=o.id, variant_sku='P-1-VAR', quantity=1, unit_price_cents=100, product_snapshot={})
+        db.session.add(oi)
+
         db.session.commit()
     yield app
     with app.app_context():

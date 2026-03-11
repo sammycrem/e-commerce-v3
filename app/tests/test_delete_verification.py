@@ -11,7 +11,9 @@ def app():
         "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         "WTF_CSRF_ENABLED": False,
         "SECRET_KEY": "test",
-        "RATELIMIT_ENABLED": False
+        "RATELIMIT_ENABLED": False,
+        "APP_ADMIN_EMAIL": "admin@example.com",
+        "APP_ADMIN_PASSWORD": "password"
     }
     app = create_app(test_config)
     with app.app_context():
@@ -32,7 +34,8 @@ def auth_client(client, app):
         admin = User.query.filter_by(username='admin').first()
         # Verify password is 'password' (default in seeder)
 
-    client.post('/login', data={'email': 'admin@example.com', 'password': 'adminpass'}, follow_redirects=True)
+    # seeder uses 'admin@example.com' and 'password' as defaults if not in config
+    client.post('/login', data={'email': 'admin@example.com', 'password': 'password'}, follow_redirects=True)
     return client
 
 def test_delete_product_with_order(auth_client, app):

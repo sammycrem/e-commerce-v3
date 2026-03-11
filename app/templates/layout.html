@@ -200,6 +200,23 @@
         </div>
     </footer>
 
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert-overlay">
+        <div id="custom-alert-box">
+            <div class="custom-alert-header">
+                <i class="bi bi-info-circle-fill"></i>
+                <span id="custom-alert-title">Message</span>
+            </div>
+            <div class="custom-alert-body" id="custom-alert-message">
+                Alert message goes here.
+            </div>
+            <div class="custom-alert-footer">
+                <button class="custom-alert-btn cancel" id="custom-alert-cancel" style="display: none;">Cancel</button>
+                <button class="custom-alert-btn" id="custom-alert-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global app configuration
         window.appConfig = {
@@ -210,6 +227,7 @@
     </script>
     <!-- Bootstrap 5 Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/alerts.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pricing.js') }}" defer></script>
     {% block scripts %}{% endblock %}
 </body>

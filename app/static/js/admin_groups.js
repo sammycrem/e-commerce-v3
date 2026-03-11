@@ -18,7 +18,7 @@
 
   function $(sel) { return document.querySelector(sel); }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const groupList = $('#group-list');
     const saveBtn = $('#save-group');
     const delBtn = $('#delete-group');
@@ -65,7 +65,6 @@
         currentGroupProducts = group.products || [];
         renderGroupProducts();
 
-        // Highlight active
         document.querySelectorAll('#group-list .list-group-item').forEach(btn => {
             if (btn.textContent === group.name) btn.classList.add('active');
             else btn.classList.remove('active');
@@ -122,7 +121,6 @@
              return;
         }
 
-        // Fetch full product details to get images
         const res = await fetch(`/api/admin/products/${sku}`);
         if (res.ok) {
             const p = await res.json();
@@ -141,7 +139,6 @@
             return;
         }
 
-        // Fetch product to verify and get details
         const res = await fetch(`/api/admin/products/${sku}`);
         if (res.ok) {
             const p = await res.json();
@@ -149,7 +146,7 @@
             renderGroupProducts();
             addSkuInput.value = '';
         } else {
-            alert('Product not found with SKU: ' + sku);
+            await alert('Product not found with SKU: ' + sku);
         }
     };
 
@@ -168,7 +165,7 @@
 
     saveBtn.onclick = async () => {
       const name = groupNameInput.value.trim();
-      if (!name) return alert('Group name is required');
+      if (!name) return await alert('Group name is required');
 
       const id = saveBtn.dataset.id;
       const method = id ? 'PUT' : 'POST';
@@ -196,18 +193,18 @@
       if (res.ok) {
         const savedGroup = await res.json();
         await loadGroups();
-        loadGroupDetail(savedGroup.id);
-        alert('Group saved successfully');
+        await loadGroupDetail(savedGroup.id);
+        await alert('Group saved successfully');
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to save group');
+        await alert(err.error || 'Failed to save group');
       }
     };
 
     delBtn.onclick = async () => {
       const id = saveBtn.dataset.id;
-      if (!id) return alert('Select a group to delete');
-      if (!confirm('Are you sure you want to delete this group?')) return;
+      if (!id) return await alert('Select a group to delete');
+      if (!await confirm('Are you sure you want to delete this group?')) return;
 
       const headers = {};
       const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -215,21 +212,20 @@
 
       const res = await fetch(`/api/admin/product-groups/${id}`, { method: 'DELETE', headers });
       if (res.ok) {
-        loadGroups();
+        await loadGroups();
         newBtn.onclick();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to delete group');
+        await alert(err.error || 'Failed to delete group');
       }
     };
 
-    loadGroups();
-    loadAllProducts();
+    await loadGroups();
+    await loadAllProducts();
 
-    // Refresh products list when products tab might have changed something
-    window.refreshAllGroups = () => {
-        loadGroups();
-        loadAllProducts();
+    window.refreshAllGroups = async () => {
+        await loadGroups();
+        await loadAllProducts();
     };
   });
 })();

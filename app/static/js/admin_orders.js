@@ -2,7 +2,7 @@
 // Admin Orders UI: list orders, view order detail, update status and shipment via fetch PUT calls.
 // Works for /admin/orders (list) and /admin/orders/<public_order_id> (detail).
 
-(function () {
+(async function () {
   'use strict';
 
   // Helper to create elements quickly
@@ -121,7 +121,7 @@
         row.appendChild(left);
         row.appendChild(right);
 
-        row.addEventListener('click', () => {
+        row.addEventListener('click', async () => {
           // Navigate to order detail page - assume route exists /admin/orders/<public_order_id>
           // If your detail page is a SPA panel, you could instead call loadOrderDetails here
           window.location.href = `/admin/orders/${encodeURIComponent(o.public_order_id)}`;
@@ -168,7 +168,7 @@
     }
   }
 
-  function renderOrderDetail(o, container) {
+  async function renderOrderDetail(o, container) {
     container.innerHTML = ''; // clear
 
     // header / basic summary
@@ -486,7 +486,7 @@
   // -------------------------------
   // Auto-detect page and init
   // -------------------------------
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     // If orders list element present, render list
     if (document.querySelector('#orders-list')) {
       loadOrdersList('#orders-list');

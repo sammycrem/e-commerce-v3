@@ -2,9 +2,19 @@
 function getBigUrl(url) {
   if (!url || !url.includes('/static/')) return url;
   const dotIdx = url.lastIndexOf('.');
-  const base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
+  let base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
   if (base.endsWith('_big')) return url;
+  if (base.endsWith('_icon')) base = base.substring(0, base.length - 5);
   return base + '_big.webp';
+}
+
+function getIconUrl(url) {
+  if (!url || !url.includes('/static/')) return url;
+  const dotIdx = url.lastIndexOf('.');
+  let base = dotIdx !== -1 ? url.substring(0, dotIdx) : url;
+  if (base.endsWith('_icon')) return url;
+  if (base.endsWith('_big')) base = base.substring(0, base.length - 4);
+  return base + '_icon.webp';
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -109,23 +119,33 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
   }
 
-  function renderProducts(products) {
+  async function renderProducts(products) {
     if (!grid) return;
-    grid.innerHTML = '';
+
+    let target = grid;
+    // If grid is not a row (e.g. on homepage it's a container), wrap in a row for search results
+    if (!grid.classList.contains('row')) {
+        grid.innerHTML = '<div class="row g-4"></div>';
+        target = grid.querySelector('.row');
+    } else {
+        grid.innerHTML = '';
+    }
+
     if (!products.length) {
-        grid.innerHTML = '<div class="col-12 text-center py-5"><h3>No products found</h3><p class="text-muted">Try adjusting your search criteria.</p></div>';
+        target.innerHTML = '<div class="col-12 text-center py-5"><h3>No products found</h3><p class="text-muted">Try adjusting your search criteria.</p></div>';
         return;
     }
     products.forEach(p => {
       const col = document.createElement('div');
       col.className = 'col-sm-6 col-md-4 col-lg-3 wide-20 animate__animated animate__fadeIn';
 
-      const imageUrl = (p.images && p.images.length) ? getBigUrl(p.images[0].url) : '/static/img/placeholder.webp';
+      // Use icon URL for thumbnails in the grid for better performance
+      const imageUrl = (p.images && p.images.length) ? getIconUrl(p.images[0].url) : '/static/img/placeholder.webp';
 
       col.innerHTML = `
         <div class="card h-100 shadow-sm border-0 product-card overflow-hidden" style="border-radius: 0;">
             <a href="/product/${p.product_sku}" class="product-image-container d-block position-relative">
-                <img src="${imageUrl}" class="card-img-top" alt="${p.name}" style="height: 350px; object-fit: cover; border-radius: 0;">
+                <img src="${imageUrl}" class="card-img-top" alt="${p.name}" style="height: 350px; object-fit: cover; border-radius: 0;" loading="lazy">
                 <div class="product-overlay d-flex align-items-center justify-content-center opacity-0 transition">
                     <span class="btn btn-primary shadow">View Details</span>
                 </div>
@@ -149,13 +169,13 @@ window.addEventListener('DOMContentLoaded', async () => {
             </div>
         </div>
       `;
-      grid.appendChild(col);
+      target.appendChild(col);
     });
 
     if (window.updateAllPrices) window.updateAllPrices();
   }
 
-  function renderStars(rating) {
+  async function renderStars(rating) {
       let stars = '';
       for (let i = 1; i <= 5; i++) {
           if (rating >= i) stars += '<i class="bi bi-star-fill small"></i>';

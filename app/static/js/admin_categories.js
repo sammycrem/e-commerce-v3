@@ -18,7 +18,7 @@
 
   function $(sel) { return document.querySelector(sel); }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const categoryList = $('#category-list');
     const saveBtn = $('#save-category');
     const delBtn = $('#delete-category');
@@ -40,7 +40,7 @@
             class: 'list-group-item list-group-item-action',
             type: 'button'
         }, cat.name);
-        item.onclick = () => {
+        item.onclick = async () => {
           catNameInput.value = cat.name;
           catSlugInput.value = cat.slug || '';
           catMetaTitleInput.value = cat.meta_title || '';
@@ -51,7 +51,6 @@
         categoryList.appendChild(item);
       });
 
-      // Also trigger a refresh of product category dropdown if it exists
       if (window.refreshProductCategories) {
           window.refreshProductCategories(data);
       }
@@ -71,7 +70,7 @@
       const slug = catSlugInput.value.trim();
       const meta_title = catMetaTitleInput.value.trim();
       const meta_description = catMetaDescriptionInput.value.trim();
-      if (!name) return alert('Category name is required');
+      if (!name) return await alert('Category name is required');
 
       const id = saveBtn.dataset.id;
       const method = id ? 'PUT' : 'POST';
@@ -93,18 +92,18 @@
       });
 
       if (res.ok) {
-        loadCategories();
+        await loadCategories();
         newBtn.onclick();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to save category');
+        await alert(err.error || 'Failed to save category');
       }
     };
 
     delBtn.onclick = async () => {
       const id = saveBtn.dataset.id;
-      if (!id) return alert('Select a category to delete');
-      if (!confirm('Are you sure? Products using this category might prevent deletion.')) return;
+      if (!id) return await alert('Select a category to delete');
+      if (!await confirm('Are you sure? Products using this category might prevent deletion.')) return;
 
       const headers = {};
       const csrfToken = document.querySelector('meta[name="csrf-token"]');
@@ -112,15 +111,15 @@
 
       const res = await fetch(`/api/admin/categories/${id}`, { method: 'DELETE', headers });
       if (res.ok) {
-        loadCategories();
+        await loadCategories();
         newBtn.onclick();
       } else {
         const err = await res.json();
-        alert(err.error || 'Failed to delete category');
+        await alert(err.error || 'Failed to delete category');
       }
     };
 
-    loadCategories();
+    await loadCategories();
     window.refreshAllCategories = loadCategories;
   });
 })();
