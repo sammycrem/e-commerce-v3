@@ -131,6 +131,7 @@ def create_app(test_config=None):
         vat_calculation_mode = 'SHIPPING_ADDRESS'
         global_promo_message = ''
         global_promo_enabled = False
+        categories = []
 
         try:
             currency = GlobalSetting.query.filter_by(key='currency').first()
@@ -152,6 +153,8 @@ def create_app(test_config=None):
             promo_enabled_setting = GlobalSetting.query.filter_by(key='global_promo_enabled').first()
             if promo_enabled_setting:
                 global_promo_enabled = str_to_bool(promo_enabled_setting.value)
+
+            categories = Category.query.order_by(Category.name).all()
         except Exception:
             # Handle case where tables are not created yet (OperationalError)
             pass
@@ -163,7 +166,8 @@ def create_app(test_config=None):
             'vat_calculation_mode': vat_calculation_mode,
             'admin_user': app.config.get('APP_ADMIN_USER'),
             'global_promo_message': global_promo_message,
-            'global_promo_enabled': global_promo_enabled
+            'global_promo_enabled': global_promo_enabled,
+            'categories': categories
         }
 
     @app.template_filter('icon_url')

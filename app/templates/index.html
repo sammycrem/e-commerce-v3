@@ -12,7 +12,7 @@
     transition: transform .4s ease-in-out !important;
     }
     .carousel-css{
-        background: #e9ecef;
+        background: #ffbce0;
         border-radius: 10px;
     }
     
@@ -24,12 +24,6 @@
     }
     .hover-scale:hover {
         transform: scale(1.05);
-    }
-
-    .product-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 2rem;
     }
 
     .product-card {
@@ -52,7 +46,7 @@
 
     /* Carousel Banner Styles */
     .banner-section {
-        background-color: #fff;
+        background-color: unset;
         margin-bottom: 1rem;
         max-width: 80%;
     }
@@ -65,7 +59,7 @@
         height: 100%;
         padding-left: 15%;
         padding-right: 15%;
-        background-color: #ffffff;
+        /*background-color: #ffffff;*/
     }
 
     .side-btn {
@@ -83,8 +77,8 @@
         align-items: center;
         justify-content: center;
         border-radius: 10px;
-        background-color: #e3faff;
-        min-height: 20%;
+        background-color: #ffbce0;
+        min-height: 29%;
     }
 
     .side-btn:hover {
@@ -104,7 +98,7 @@
 
     .carousel-item-custom {
         display: flex;
-        height: 300px;
+        height: 250px;
         width: 100%;
         align-items: center;
     }
@@ -196,11 +190,25 @@
         .banner-image-side {
             height: 200px;
         }
-        .display-5 {
-            font-size: 1.8rem;
+        .display-6 {
+            font-size: 1.6rem;
         }
     }
+
+    .product-card .card-img-top {
+        width: 100%;
+        height: 300px !important;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    .text-truncate-2 {
+        display: none;
+    }
+    .text-warning{
+        display: none;
+    }
 </style>
+
 {% endblock %}
 
 {% block content %}
@@ -226,7 +234,7 @@
                             <!-- If even index, text on left. If odd, text on right (reversed) -->
                             <div class="carousel-item-custom {% if loop.index0 % 2 != 0 %}flex-row-reverse{% endif %}">
                                 <div class="banner-text-side">
-                                    <h2 class="display-5 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
+                                    <h2 class="display-6 fw-bold mb-3 text-uppercase">{{ item.category.name }}</h2>
                                     <a href="{{ url_for('main.shop_page', category=item.category.name) }}" class="btn-shop-now bg-primary">Shop Now</a>
                                 </div>
                                 <div class="banner-image-side">
@@ -267,41 +275,16 @@
 </div>
 
 <div class="container py-4">
-    <!-- Search Bar Section (Relocated after banners) -->
-    <div class="row mb-1 justify-content-center" id="search-section">
-        <div class="col-lg-10">
-            <div class="card border-0 shadow-sm p-2 rounded-4 bg-white">
-                <div class="card-body p-2" style="padding: 0px !important;">
-                    <form id="product-search-form" class="d-flex align-items-center">
-                        <div class="input-group">
-                            <select class="form-select border-0 bg-light rounded-start-pill py-3 ps-4 fw-bold" id="search-category" style="max-width: 200px;">
-                                <option value="">All Categories</option>
-                                <!-- Populated by JS -->
-                            </select>
-                            <input type="text" class="form-control border-0 py-3 px-4 fs-5" id="search-input" placeholder="Search for products..." aria-label="Search">
-                            <button class="btn btn-primary rounded-end-pill px-4 py-3" type="submit">
-                                <i class="bi bi-search fs-5"></i>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Featured Section -->
-    <div class="row mb-1" id="featured-products">
-        <div class="col-12 d-flex justify-content-between align-items-end mb-4">
-            <!-- <div>
-                <h2 class="fw-bold mb-1 h1">Featured Products</h2>
-                <p class="text-muted mb-0">Our top picks for this week</p>
-            </div> -->
+    <div id="featured-products" class="mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold mb-0">Featured Products</h2>
             <a href="{{ url_for('main.shop_page') }}" class="btn btn-link text-primary fw-bold text-decoration-none p-0">
                 View All <i class="bi bi-chevron-right ms-1"></i>
             </a>
         </div>
 
-        <div id="product-grid" class="product-grid">
+        <div id="product-grid" class="row g-4">
             <div class="col-12 text-center py-5">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading products...</span>

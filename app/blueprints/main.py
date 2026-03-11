@@ -67,9 +67,12 @@ def index():
 @cache.cached(timeout=60, query_string=True)
 def shop_page():
     category = request.args.get('category')
+    q = request.args.get('q')
     query = Product.query.filter_by(status='published')
     if category:
         query = query.filter_by(category=category)
+    if q:
+        query = query.filter(Product.name.ilike(f"%{q}%"))
     products = query.all()
     return render_template('shop.html', products=products)
 
